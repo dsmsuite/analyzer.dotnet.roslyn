@@ -2,7 +2,7 @@
 
 # Introduction
 
-This reposiory will contain a software dependency analyzer for .Net using the Roslyn compiler.
+This reposiory will contain a software dependency analyzer for .Net.
 
 Planned features:
 -Analyses software dependencies using the Roslyn compiler
