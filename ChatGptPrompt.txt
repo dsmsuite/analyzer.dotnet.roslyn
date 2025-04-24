@@ -30,12 +30,19 @@ Database
 --------
 The results of analysis of the software dependencies will be stored in a Sqlite database with the following schema.
   
+Table: Run: Info of analysis run
+   id         : int      : primary key
+   timestamp  : datetime : time of analysis run
+   author     : string   : person who trigger run
+
 Table : Node: Code data for each node
    id          : int : Primary key.
    parent_id   : int : Optional node id of parent. Null for root nodes.
    loc         : int : Lines of code of node
    cc          : int : Optional cyclomatic complexity of node
    detail_id   : int : Refers to row in NodeDetails table.
+   created     : int : Refers to row in table Run to indicate when node was added
+   deleted     : int : Refers to row in table Run to indicate when node was deleted
 
 Table: Edge: Core data fore each edge
    id         : int : Primary key.
@@ -43,6 +50,8 @@ Table: Edge: Core data fore each edge
    target_id  : int : Target of the edge. Refers to row in Node table.
    strength   : int : Strength of the edge.
    detail_id  : int : Refers to row in EdgeDetails table.
+   created     : int : Refers to row in table Run to indicate when edge was added
+   deleted     : int : Refers to row in table Run to indicate when edge was deleted
 
 Table: NodeDetails: Additional detailed information for each node.
    id            : int    : Primary key.
