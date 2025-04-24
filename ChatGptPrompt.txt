@@ -1,79 +1,112 @@
-I want to analyzer software dependencies for C# at a very detail level and represent it by a hierarchical graph.
-
-Each software element will be represented by a node having the following attributes:
--Unique node-id represented an integer
--Node name represented by a string
--Unique node-type represented by an integer. The integer refers to a node type string.
--Parent-id referring to its parent node.
--File-id
--Begin line number
--End line number
-
-Each software dependency will be represented by a edge having the following attributes:
--Edge consumer node-id
--Edge provider node-id
--Dependency strength
--Unique edge-type represented by an integer. The integer refers to a edge type string.
--File-id
--Begin line number
--End line number
-
-The node types can be:
+Intent
+------
+I want to analyze software dependencies for C# source code and represent the result in a hierarchical graph stored in a Sqlite database.
+ 
+I want at least the following node types to be reported:
 -File
 -Class
 -Enum
 -Struct
--Function
+-Method
 -Variable
+-Event
 
-The edge types can be:
--Usage for edges caused by usage statement
--Inherit for edges caused by  class inheritance
--Override for edges caused by methods being overridden in a derived class
--Call for edges caused by function calls
--Use for edges caused by variables being used by functions
--Parameter for edges caused by parameter having a specific type. It will cause an edge between the function and parameter type.
+I want at least the following edge types to be reported:
+-Using       : for using statements
+-Inheritance : for inheritance relation between class types
+-Override    : for methods overridden by derived classes
+-Realizes    : for realization of interfaces types
+-Implements  : for methods of implementation of interface methods
+-Calls       : for method calls
+-Uses        : for variable usage by methods
+-Subscribe   : for methods subscribing to event
+-Unsubscribe : for methods unsubscribing to event
+-Handle      : for methods handling event
+-Parameter   : for method parameters. It will cause an edge between the method node and parameter type node
+-Return      : for method parameters. It will cause an edge between the method node and return type node
+-TemplateArgument : for template argumemnts.  It will cause an edge between the template instance node and template argument type node
 
-I want use Roslyn to analyze these dependencies based on a visual studio solution file
-
-I want the output to be a SQLite database. T
-
-The database should have the following tables with mentioned columns. For each column a name and a type is given.
--MetadataTable
- -Creation date : string
- -Proggramming language: string
-
--SourceFileTable
-  -Id: int
-  -File location: string
-
--NodeTypeTable
-  -Id: int
-  -Name: string
-  -Description: string
-
--EdgeTypeTable
-  -Id: int
-  -Name: string
-  -Description: string
-
--NodeTable
-  -Id: int
-  -Name: string
-  -Parent-id: int
-  -Type-id: int
-  -File-id: int
-  -BeginLine: int
-  -EndLine: int
+Database
+--------
+The results of analysis of the software dependencies will be stored in a Sqlite database with the following schema.
   
--EdgeTable:
-  -ConsumerId: int
-  -ProviderId: int
-  -Type-id: int
-  -File-id: int
-  -Line: int
+Table : Node: Code data for each node
+   id          : int : Primary key.
+   parent_id   : int : Optional node id of parent. Null for root nodes.
+   loc         : int : Lines of code of node
+   cc          : int : Optional cyclomatic complexity of node
+   detail_id   : int : Refers to row in NodeDetails table.
 
-Could you generated the source code for a command line utility. When generating code separate functionality by splitting up the code in several classes.
+Table: Edge: Core data fore each edge
+   id         : int : Primary key.
+   source_id  : int : Source of edge. Refers to row in Node table.
+   target_id  : int : Target of the edge. Refers to row in Node table.
+   strength   : int : Strength of the edge.
+   detail_id  : int : Refers to row in EdgeDetails table.
 
+Table: NodeDetails: Additional detailed information for each node.
+   id            : int    : Primary key.
+   name: string  : string : Name of the node.
+   node_type_id  : int    : Refers to row in NodeType table.
+   location_id   : int    : Refers to row in SourceLocation table.
+   documentation : string : Documentation as found in source code itself. Not to be filled by code analysis, but reserved for later usage.
+   annotation    : string : Annotation added after human or ai analysis. Not to be filled by code analysis, but reserved for later usage.
+
+Table: EdgeDetails: Additional detailed information for each edge
+   id            : int    : Primary key.
+   edge_type_id  : int    : Refers to row in EdgeType table.
+   location_id   : int    : Refers to row in SourceLocation table.
+   annotation    : string : Annotation added after human or ai analysis. Not to be filled by code analysis, but reserved for later usage.
+
+Table: NodeType: The names of all node types
+   id   : int    : Primary key
+   text : string : Name of node type
+
+Table:  EdgeType: The names of all edge types
+   id   : int    : Primary key
+   text : string : Name of edge type
+
+Table: SourceLocation:
+   id             : int : Primary key
+   source_file_id : int : Refers to row in SourceFile table.
+   begin_line_no  : int : Line number where source code of node starts
+   end_line_No    : int : Line number where source code of node ends
+
+Table: SourceFile:
+   id       : int    : Primary key.
+   filename : string : full path of the source file.
+
+Question 1
+----------
+Generate a sql script to generate this database.
+
+
+Question 2
+----------
+Generate C# code including unit test code and VS2022 solution and project files for this code analyzer.
+
+Guidelines for creating code as follows.
+
+1. Its must be a command line utility. 
+
+2. It must use the Roslyn compiler framework for code analysis.
+
+3. Results will be represented by a graph with hierarchical nodes and edges between those nodes.
+
+4. Results will be stored in a sqlite database.
+
+5. Nodes and edges must be reported in the most detailed level achievable for the Roslyn compiler framework. 
+
+6. Code must be generated for C# using .Net8.0.
+
+7. The following layers are suggested:
+-Analysis : for all classes related to code analysis using Roslyn compiler framework
+-Graph    : for all graph related classes as persisted in the database
+-Data     : for all database code
+-Main     : for the main program code
+
+8. Please use single responsibility principle to avoid large classes.
+
+9. For testability all layers must be decoupled using interfaces.
 
 
