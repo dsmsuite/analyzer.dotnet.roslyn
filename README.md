@@ -5,10 +5,9 @@
 This reposiory contains a software dependency analyzer for C#. 
 
 Planned features:
-- Uses a solution file as input
-- Analysis software dependencies at detailed level e.g. methods, variables, types
-- Outputs nodes and edges to a sqlite database
-- This database can be imported in the dsmsuite viewer.
+- Uses a solution file as input.
+- Analysis software dependencies at detailed level e.g. methods, variables, types.
+- Resulting nodes and edges are saved in a sqlite database. This database can be imported in the dsmsuite viewer.
 
 # References
 The following information was used as inputb for the development of te code:
