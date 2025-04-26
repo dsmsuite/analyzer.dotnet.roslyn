@@ -1,4 +1,4 @@
-#  A software dependency analyzer for .Net using the Roslyn compiler
+#  A software dependency analyzer for C# using the Roslyn compiler
 
 # Introduction
 
