@@ -12,8 +12,9 @@ Planned features:
 # References
 The following information was used as inputb for the development of te code:
 
-* [Introduction to Roslyn and its use in program development](https://unicorn-dev.medium.com/introduction-to-roslyn-and-its-use-in-program-development-ee576503d659)
-* [Chatgpt session](ChatGptSession.md)
+* [Chatgpt session](ChaptgptSession.md) used for initial setup of code
+* [Introduction to Roslyn and its use in program development](https://unicorn-dev.medium.com/introduction-to-roslyn-and-its-use-in-program-development-ee576503d659) to get some mor background on Rislyn and refine the solution.
+
 
 # Status
 
