@@ -12,21 +12,25 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             MSBuildWorkspace workspace = MSBuildWorkspace.Create();
             Solution currSolution = workspace.OpenSolutionAsync(solutionPath).Result;
 
-            foreach (Project projectPath in currSolution.Projects)
+            foreach (Project project in currSolution.Projects)
             {
-                if (projectPath.FilePath != null)
+                if (project.FilePath != null)
                 {
-                    Project project = await workspace.OpenProjectAsync(projectPath.FilePath);
+                    Console.WriteLine($"Processing project {project.FilePath}");
+
                     foreach (var document in project.Documents)
                     {
-                        var syntaxTree = await document.GetSyntaxTreeAsync();
-                        var semanticModel = await document.GetSemanticModelAsync();
+                        if (document.FilePath != null)
+                        {
+                            var syntaxTree = await document.GetSyntaxTreeAsync();
+                            var semanticModel = await document.GetSemanticModelAsync();
 
-                        if (syntaxTree == null || semanticModel == null) continue;
+                            if (syntaxTree == null || semanticModel == null) continue;
 
-                        var root = await syntaxTree.GetRootAsync();
-                        var visitor = new DependencyVisitor(semanticModel, graphBuilder, document.FilePath ?? "UnknownFile.cs");
-                        visitor.Visit(root);
+                            var root = await syntaxTree.GetRootAsync();
+                            var visitor = new DependencyVisitor(semanticModel, graphBuilder, document.FilePath ?? "UnknownFile.cs");
+                            visitor.Visit(root);
+                        }
                     }
                 }
             }

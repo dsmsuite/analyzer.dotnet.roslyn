@@ -13,4 +13,10 @@
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Data\schema.sql">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

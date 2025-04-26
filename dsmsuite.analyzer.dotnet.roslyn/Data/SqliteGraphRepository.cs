@@ -1,5 +1,6 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.Data.Sqlite;
+using System.Runtime.InteropServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Data
 {
@@ -9,7 +10,23 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
         public SqliteGraphRepository(string dbPath)
         {
+            // _connectionString = "Data Source=MyDatabase.sqlite;Version=3;";
             _connectionString = $"Data Source={dbPath}";
+        }
+
+        public void Create()
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+
+                // Create a table
+                string sql = "CREATE TABLE IF NOT EXISTS highscores (name VARCHAR(20), score INT)";
+                using (var command = new SqliteCommand(sql, connection))
+                {
+                    command.ExecuteNonQuery();
+                }
+            }
         }
 
         public void SaveNodes(IEnumerable<GraphNode> nodes)

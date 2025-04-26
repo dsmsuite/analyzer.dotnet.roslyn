@@ -9,6 +9,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 {
     public interface IGraphRepository
     {
+        void Create();
         void SaveNodes(IEnumerable<GraphNode> nodes);
         void SaveEdges(IEnumerable<GraphEdge> edges);
     }
