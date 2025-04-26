@@ -4,7 +4,7 @@
 
 This reposiory contains a software dependency analyzer for C#. 
 
-Features:
+Planned features:
 - Uses a solution file as input
 - Analysis software dependencies at detailed level e.g. methods, variables, types
 - Outputs nodes and edges to a sqlite database
