@@ -13,3 +13,7 @@ Planned features:
 # Status
 
 Does not yet contain any source code.
+
+References
+
+https://unicorn-dev.medium.com/introduction-to-roslyn-and-its-use-in-program-development-ee576503d659
