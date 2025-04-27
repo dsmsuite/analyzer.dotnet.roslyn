@@ -3,6 +3,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis;
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using System.Xml.Linq;
+using Microsoft.CodeAnalysis.FlowAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
@@ -273,6 +275,45 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             //    LinesOfCode = node.GetLocation().GetLineSpan().EndLinePosition.Line - node.GetLocation().GetLineSpan().StartLinePosition.Line + 1
             //};
             //_graphBuilder.AddNode(graphNode);
+        }
+
+        private  int? CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
+        {
+            int? cyclomaticComplexity = null;
+
+            if (node != null)
+            {
+                // No body to analyze (abstract method, interface, etc.)
+                if (node.Body != null || node.ExpressionBody != null)
+                {
+                    IOperation? operation = _semanticModel.GetOperation(node) ?? _semanticModel.GetOperation(node.Body) ?? _semanticModel.GetOperation(node.ExpressionBody);
+                    IBlockOperation? blockOperation = operation as IBlockOperation;
+                    if (blockOperation == null)
+                    {
+                        ControlFlowGraph cfg = ControlFlowGraph.Create(blockOperation);
+
+                        if (cfg == null)
+                        {
+                            int nodes = cfg.Blocks.Length;
+                            int edges = 0;
+
+                            foreach (var block in cfg.Blocks)
+                            {
+                                if (block.ConditionalSuccessor?.Destination != null)
+                                    edges++;
+
+                                if (block.FallThroughSuccessor?.Destination != null)
+                                    edges++;
+                            }
+
+                            int p = 1; // assume 1 connected component for a method
+                            cyclomaticComplexity = edges - nodes + (2 * p);
+                        }
+                    }
+                }
+            }
+
+            return cyclomaticComplexity; 
         }
     }
 }
