@@ -5,6 +5,8 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using System.Reflection.Metadata;
+using System.Data.Common;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
@@ -15,13 +17,13 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
     public class DependencyVisitor : CSharpSyntaxWalker
     {
         private readonly SemanticModel _semanticModel;
-        private readonly IGraphBuilder _graphBuilder;
+        private readonly IDependencyVisitorCallback _callback;
         private readonly string _filename;
 
-        public DependencyVisitor(SemanticModel semanticModel, IGraphBuilder graphBuilder, string filename)
+        public DependencyVisitor(SemanticModel semanticModel, IDependencyVisitorCallback callback, string filename)
         {
             _semanticModel = semanticModel;
-            _graphBuilder = graphBuilder;
+            _callback = callback;
             _filename = filename;
         }
 
@@ -32,22 +34,17 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             INamedTypeSymbol? classSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (classSymbol != null)
             {
-                CreateNode(classSymbol, "class", node);
+                _callback.RegisterNode(classSymbol, NodeType.Class, node);
 
-                // Check base class (inheritance)
                 if (classSymbol.BaseType != null && classSymbol.BaseType.SpecialType != SpecialType.System_Object)
                 {
-                    // TODO: Implement
-                    string baseClassName = classSymbol.BaseType.ToDisplayString();
-                    Console.WriteLine($"  Inherits: {baseClassName}");
+                    INamedTypeSymbol? baseClassSymbol = classSymbol.BaseType;
+                    _callback.RegisterEdge(classSymbol, baseClassSymbol, EdgeType.Inheritance);
                 }
 
-                // Check interfaces (implements)
-                foreach (var interfaceType in classSymbol.Interfaces)
+                foreach (INamedTypeSymbol interfaceType in classSymbol.Interfaces)
                 {
-                    // TODO: Implement
-                    string interfaceName = interfaceType.ToDisplayString();
-                    Console.WriteLine($"  Implements interface: {interfaceName}");
+                    _callback.RegisterEdge(classSymbol, interfaceType, EdgeType.Implements);
                 }
             }
         }
@@ -59,17 +56,23 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (methodSymbol != null)
             {
-                CreateNode(methodSymbol, "method", node);
+                int? cyclomaticComplexity = CalculateCyclomaticComplexity(node);
+
+                _callback.RegisterNode(methodSymbol, NodeType.Method, node, cyclomaticComplexity);
+
 
                 if (methodSymbol != null)
                 {
-                    // TODO: Implement
-                    //Console.WriteLine($"Method: {methodSymbol.Name} returns {methodSymbol.ReturnType}");
+                    _callback.RegisterEdge(methodSymbol, methodSymbol.ReturnType, EdgeType.Returns);
 
-                    foreach (var parameter in methodSymbol.Parameters)
+                    foreach (IParameterSymbol parameter in methodSymbol.Parameters)
                     {
-                        // TODO: Implement
-                        //Console.WriteLine($"Parameter: {parameter.Name} of type {parameter.Type}");
+                        _callback.RegisterEdge(methodSymbol, parameter.Type, EdgeType.Implements);
+                    }
+
+                    if (methodSymbol.IsOverride)
+                    {
+                        _callback.RegisterEdge(methodSymbol, methodSymbol.OverriddenMethod, EdgeType.Overrride);
                     }
                 }
             }
@@ -83,7 +86,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
             if (propertySymbol != null)
             {
-                CreateNode(propertySymbol, "property", node);
+                _callback.RegisterNode(propertySymbol, NodeType.Property, node);
             }
         }
 
@@ -94,16 +97,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             // Loop over all variables (multiple variables can be declared in one FieldDeclaration) e.g. 'private int x, y;'
             foreach (VariableDeclaratorSyntax variableNode in node.Declaration.Variables)
             {
-                // Resolve the IFieldSymbol for each variable
                 IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
                 if (fieldSymbol != null)
                 {
-                    CreateNode(fieldSymbol, "field", variableNode);
-
-                    // TODO: Use ?
-                    bool isStatic = fieldSymbol.IsStatic;
-                    bool isReadOnly = fieldSymbol.IsReadOnly;
-                    var accessibility = fieldSymbol.DeclaredAccessibility; // public, private, etc.
+                    _callback.RegisterNode(fieldSymbol, NodeType.Field, node);
                 }
             }
         }
@@ -115,7 +112,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             IEventSymbol? eventSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (eventSymbol != null)
             {
-                CreateNode(eventSymbol, "event", node);
+                _callback.RegisterNode(eventSymbol, NodeType.Event, node);
             }
         }
 
@@ -126,7 +123,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             INamedTypeSymbol? enumSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (enumSymbol != null)
             {
-                CreateNode(enumSymbol, "enum", node);
+                _callback.RegisterNode(enumSymbol, NodeType.Enum, node);
 
                 foreach (EnumMemberDeclarationSyntax enumMemberNode in node.Members)
                 {
@@ -134,7 +131,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
                     if (enumValueSymbol != null)
                     {
-                        CreateNode(enumValueSymbol, "enum-value", enumMemberNode);
+                        _callback.RegisterNode(enumValueSymbol, NodeType.EnumValue, node);
                     }
                 }
             }
@@ -147,11 +144,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             INamedTypeSymbol? structSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (structSymbol != null)
             {
-                CreateNode(structSymbol, "struct", node);
+                _callback.RegisterNode(structSymbol, NodeType.Struct, node);
 
             }
-
-            // TODO: Fields and properties inside will be visited separately 
         }
 
 
@@ -162,7 +157,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(node) as ILocalSymbol;
             if (variableSymbol != null)
             {
-                CreateNode(variableSymbol, "variable", node);
+                _callback.RegisterNode(variableSymbol, NodeType.Variable, node);
             }
         }
 
@@ -252,30 +247,31 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             return "<outside method>";
         }
 
-        private void CreateNode(ISymbol symbol, string type, SyntaxNode syntaxNode)
-        {
-            Location location = syntaxNode.GetLocation();
-            FileLinePositionSpan lineSpan = location.GetLineSpan();
+        //private void CreateNode(ISymbol symbol, string type, SyntaxNode syntaxNode)
+        //{
+        //    Location location = syntaxNode.GetLocation();
+        //    FileLinePositionSpan lineSpan = location.GetLineSpan();
 
-            string name = symbol.Name;
-            string file = _filename;
-            int startline = lineSpan.StartLinePosition.Line;
-            int endline = lineSpan.EndLinePosition.Line;
-            int linesOfCode = endline - startline + 1;
-            ISymbol parent = symbol.ContainingSymbol;
+        //    string name = symbol.Name;
+        //    string fullname = symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        //    string file = _filename;
+        //    int startline = lineSpan.StartLinePosition.Line;
+        //    int endline = lineSpan.EndLinePosition.Line;
+        //    int linesOfCode = endline - startline + 1;
+        //    ISymbol parent = symbol.ContainingSymbol;
 
-            Console.WriteLine($"Add name={name} type={type} parent={parent.Name} start={startline} end={endline} loc={linesOfCode} file={_filename}");
+        //    Console.WriteLine($"Add name={name} type={type} parent={parent.Name} start={startline} end={endline} loc={linesOfCode} file={_filename}");
 
-            // id ?
+        //    // id ?
 
-            //var graphNode = new GraphNode
-            //{
-            //    Name = symbol.Name,
-            //    Type = "Class",
-            //    LinesOfCode = node.GetLocation().GetLineSpan().EndLinePosition.Line - node.GetLocation().GetLineSpan().StartLinePosition.Line + 1
-            //};
-            //_graphBuilder.AddNode(graphNode);
-        }
+        //    //var graphNode = new GraphNode
+        //    //{
+        //    //    Name = symbol.Name,
+        //    //    Type = "Class",
+        //    //    LinesOfCode = node.GetLocation().GetLineSpan().EndLinePosition.Line - node.GetLocation().GetLineSpan().StartLinePosition.Line + 1
+        //    //};
+        //    //_graphBuilder.AddNode(graphNode);
+        //}
 
         private  int? CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
         {

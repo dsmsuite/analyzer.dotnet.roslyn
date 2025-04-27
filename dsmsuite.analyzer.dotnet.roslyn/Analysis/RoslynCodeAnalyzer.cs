@@ -5,8 +5,18 @@ using Microsoft.CodeAnalysis.MSBuild;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
-    public class RoslynCodeAnalyzer : ICodeAnalyzer
+    public class RoslynCodeAnalyzer : ICodeAnalyzer, IDependencyVisitorCallback
     {
+        public int? RegisterNode(ISymbol symbol, NodeType nodeType, SyntaxNode syntaxNode, int? cyclomaticComplexity)
+        {
+            return null;
+        }
+
+        public int? RegisterEdge(ISymbol source, ISymbol target, EdgeType edgeType)
+        {
+            return null;
+        }
+
         public async Task AnalyzeAsync(string solutionPath, IGraphBuilder graphBuilder)
         {
             MSBuildWorkspace workspace = MSBuildWorkspace.Create();
@@ -28,7 +38,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                             if (syntaxTree == null || semanticModel == null) continue;
 
                             var root = await syntaxTree.GetRootAsync();
-                            var visitor = new DependencyVisitor(semanticModel, graphBuilder, document.FilePath ?? "UnknownFile.cs");
+                            var visitor = new DependencyVisitor(semanticModel, this, document.FilePath ?? "UnknownFile.cs");
                             visitor.Visit(root);
                         }
                     }
