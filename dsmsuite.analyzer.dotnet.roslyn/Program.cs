@@ -1,6 +1,5 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis;
 using dsmsuite.analyzer.dotnet.roslyn.Data;
-using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.Extensions.DependencyInjection;
 
 if (args.Length < 2)
@@ -39,18 +38,16 @@ if (outputFileFileInfo.Exists)
 var services = new ServiceCollection();
 
 // Register dependencies
-services.AddSingleton<ICodeAnalyzer, RoslynCodeAnalyzer>();
-services.AddSingleton<IGraphBuilder, InMemoryGraphBuilder>();
+services.AddSingleton<ICodeAnalyzer, CodeAnalyzer>();
 services.AddSingleton<IGraphRepository>(provider => new SqliteGraphRepository(outputFileFileInfo.FullName));
 
 var serviceProvider = services.BuildServiceProvider();
 
 var analyzer = serviceProvider.GetRequiredService<ICodeAnalyzer>();
-var graphBuilder = serviceProvider.GetRequiredService<IGraphBuilder>();
 var repository = serviceProvider.GetRequiredService<IGraphRepository>();
 
 Console.WriteLine($"Analyzing code at: {solutionFileInfo.FullName}");
-await analyzer.AnalyzeAsync(solutionFileInfo.FullName, graphBuilder);
+await analyzer.AnalyzeAsync(solutionFileInfo.FullName, repository);
 
 //Console.WriteLine("Saving results to database at {outputFileFileInfo.FullName}");
 //repository.Create();

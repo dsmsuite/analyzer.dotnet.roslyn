@@ -1,15 +1,13 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Data;
+using Microsoft.CodeAnalysis;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
-    public interface IDependencyVisitorCallback
+    public interface ICodeAnalysisResult
     {
         int? RegisterNode(ISymbol symbol, NodeType nodeType, SyntaxNode syntaxNode, int? cyclomaticComplexity = null);
         int? RegisterEdge(ISymbol source, ISymbol target, EdgeType edgeType);
+
+        void Save(IGraphRepository graphRepository);
     }
 }
