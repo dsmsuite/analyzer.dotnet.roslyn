@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Microsoft.Build.Evaluation;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
@@ -46,7 +47,13 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (methodSymbol != null)
             {
-                int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
+                int cyclomaticComplexity = 0;
+
+                IBlockOperation operation = GetBlockOperation(node);
+                if (operation != null)
+                {
+                    cyclomaticComplexity = CalculateCyclomaticComplexity(operation);
+                }
 
                 _codeAnalysisResult.RegisterNode(methodSymbol, NodeType.Method, node, cyclomaticComplexity);
 
@@ -99,7 +106,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
         public override void VisitEventFieldDeclaration(EventFieldDeclarationSyntax node)
         {
-            base.VisitEventFieldDeclaration(node); 
+            base.VisitEventFieldDeclaration(node);
 
             var eventSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (eventSymbol != null)
@@ -249,39 +256,46 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             return "<outside method>";
         }
 
-        private int CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
+        private IBlockOperation? GetBlockOperation(MethodDeclarationSyntax node)
+        {
+            IBlockOperation? operation = null;
+            if (node.Body != null)
+            {
+                operation = _semanticModel.GetOperation(node.Body) as IBlockOperation;
+            }
+
+            if (node.ExpressionBody != null)
+            {
+                operation = _semanticModel.GetOperation(node.ExpressionBody) as IBlockOperation;
+            }
+
+            return operation;
+        }
+
+        private int CalculateCyclomaticComplexity(IBlockOperation blockOperation)
         {
             int cyclomaticComplexity = 0;
 
-            if (node != null)
+            if (blockOperation != null)
             {
-                // No body to analyze (abstract method, interface, etc.)
-                if (node.Body != null || node.ExpressionBody != null)
+                ControlFlowGraph cfg = ControlFlowGraph.Create(blockOperation);
+
+                if (cfg == null)
                 {
-                    IOperation? operation = _semanticModel.GetOperation(node) ?? _semanticModel.GetOperation(node.Body) ?? _semanticModel.GetOperation(node.ExpressionBody);
-                    IBlockOperation? blockOperation = operation as IBlockOperation;
-                    if (blockOperation != null)
+                    int nodes = cfg.Blocks.Length;
+                    int edges = 0;
+
+                    foreach (var block in cfg.Blocks)
                     {
-                        ControlFlowGraph cfg = ControlFlowGraph.Create(blockOperation);
+                        if (block.ConditionalSuccessor?.Destination != null)
+                            edges++;
 
-                        if (cfg == null)
-                        {
-                            int nodes = cfg.Blocks.Length;
-                            int edges = 0;
-
-                            foreach (var block in cfg.Blocks)
-                            {
-                                if (block.ConditionalSuccessor?.Destination != null)
-                                    edges++;
-
-                                if (block.FallThroughSuccessor?.Destination != null)
-                                    edges++;
-                            }
-
-                            int p = 1; // assume 1 connected component for a method
-                            cyclomaticComplexity = edges - nodes + (2 * p);
-                        }
+                        if (block.FallThroughSuccessor?.Destination != null)
+                            edges++;
                     }
+
+                    int p = 1; // assume 1 connected component for a method
+                    cyclomaticComplexity = edges - nodes + (2 * p);
                 }
             }
 
