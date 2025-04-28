@@ -66,6 +66,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
                 RegisterEdgeType(edgeType);
             }
+            else
+            {
+
+            }
 
             return null;
         }

@@ -43,6 +43,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
+        private bool IsVoid(ITypeSymbol typeSymbol)
+        {
+            return typeSymbol.SpecialType == SpecialType.System_Void;
+        }
+
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
             base.VisitMethodDeclaration(node);
@@ -57,11 +62,14 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
                 if (methodSymbol != null)
                 {
-                    _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.ReturnType, EdgeType.Returns);
+                    if (!IsVoid(methodSymbol.ReturnType))
+                    {
+                        _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.ReturnType, EdgeType.Returns);
+                    }
 
                     foreach (IParameterSymbol parameter in methodSymbol.Parameters)
                     {
-                        _codeAnalysisResult.RegisterEdge(methodSymbol, parameter.Type, EdgeType.Implements);
+                        _codeAnalysisResult.RegisterEdge(methodSymbol, parameter.Type, EdgeType.Parameter);
                     }
 
                     if (methodSymbol.IsOverride)
