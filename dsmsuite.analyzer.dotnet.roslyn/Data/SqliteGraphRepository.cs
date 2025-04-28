@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using SQLitePCL;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Data
 {
@@ -8,8 +9,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
         public SqliteGraphRepository(string dbPath)
         {
-            // _connectionString = "Data Source=MyDatabase.sqlite;Version=3;";
             _connectionString = $"Data Source={dbPath}";
+            Batteries.Init();
         }
 
         public void Create()
@@ -18,19 +19,59 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
             {
                 connection.Open();
 
-                // Create a table
-                string sql = "CREATE TABLE IF NOT EXISTS highscores (name VARCHAR(20), score INT)";
-                using (var command = new SqliteCommand(sql, connection))
+                using (var command = connection.CreateCommand())
                 {
+                    command.CommandText = SqlCommands.CreateDatabase;
                     command.ExecuteNonQuery();
                 }
             }
         }
         public void SaveNodeType(int id, string name)
         {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+
+                using var transaction = connection.BeginTransaction();
+
+                // Create a table
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = @"INSERT INTO NodeType (id, name)
+                                            VALUES (@id, @name);";
+
+                    command.Parameters.AddWithValue("id", id);
+                    command.Parameters.AddWithValue("name", name);
+
+                    command.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
         }
+
         public void SaveEdgeType(int id, string name)
         {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+
+                using var transaction = connection.BeginTransaction();
+
+                // Create a table
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = @"INSERT INTO EdgeType (id, name)
+                                            VALUES (@id, @name);";
+
+                    command.Parameters.AddWithValue("id", id);
+                    command.Parameters.AddWithValue("name", name);
+
+                    command.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
         }
 
         public void SaveSourceFilename(int id, string filename)

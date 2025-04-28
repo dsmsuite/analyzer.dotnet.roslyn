@@ -25,7 +25,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
-        private void RegsiterNodeType(NodeType nodeType)
+        private void RegisterNodeType(NodeType nodeType)
         {
             if (!_nodeTypeIds.ContainsKey(nodeType))
             {
@@ -34,7 +34,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
-        private void RegsiterEdgeType(EdgeType edgeType)
+        private void RegisterEdgeType(EdgeType edgeType)
         {
             if (!_edgeTypeIds.ContainsKey(edgeType))
             {
@@ -49,7 +49,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             Node node = new Node(_nodeIndex, symbol, syntaxNode, nodeType, cyclomaticComplexity);
             _nodes[symbol] = node;
 
-            RegsiterNodeType(nodeType);
+            RegisterNodeType(nodeType);
             RegisterFilename(node.Filename);
 
             return _nodeIndex;
@@ -64,7 +64,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 Node targetNode = _nodes[target];
                 _edges.Add(new Edge(_edgeIndex, sourceNode, targetNode, edgeType));
 
-                RegsiterEdgeType(edgeType);
+                RegisterEdgeType(edgeType);
             }
 
             return null;
@@ -72,6 +72,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
         public void Save(IGraphRepository graphRepository)
         {
+            graphRepository.Create();
+
             foreach (KeyValuePair<NodeType, int> keyValuePair in _nodeTypeIds)
             {
                 graphRepository.SaveNodeType(keyValuePair.Value, keyValuePair.Key.ToString());

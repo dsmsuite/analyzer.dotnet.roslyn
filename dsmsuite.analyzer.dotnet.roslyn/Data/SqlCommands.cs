@@ -1,13 +1,13 @@
 ﻿namespace dsmsuite.analyzer.dotnet.roslyn.Data
 {
-    internal class Schema
+    internal class SqlCommands
     {
-        string Sql = @"
+        public const string CreateDatabase = @"
 -- Table: Run
 CREATE TABLE AnalysisRunInfo(
         id INTEGER PRIMARY KEY,            -- Unique ID
         timestamp DATETIME NOT NULL,       -- Timestamp when analysis was performed
-        descriptiomn TEXT,                 -- A description of the purpose of the analysis run
+        description TEXT,                 -- A description of the purpose of the analysis run
         author TEXT                        -- Optionally the name of the person who ran the analysis
     );
 
@@ -20,7 +20,7 @@ CREATE TABLE Node(
     source_file_id INTEGER NOT NULL,                           -- The source file where the node was found
     begin_line_no INTEGER NOT NULL,                            -- The line number where the node source code begins
     end_line_no INTEGER NOT NULL,                              -- The line number where the node source code ends
-    lines_of_code_metric INTEGER,                              -- The optional lines of code metric
+    lines_of_code INTEGER,                                     -- The optional lines of code metric
     complexity INTEGER,                                        -- The optional cylomatic complexity metric for functions
     documentation TEXT,                                        -- The optional documentation as found in the source code
     annotation TEXT,                                           -- An optional annotation based on human or ai evaluation
@@ -50,13 +50,13 @@ CREATE TABLE Node(
 -- Table: NodeType
     CREATE TABLE NodeType(
     id INTEGER PRIMARY KEY,                                    -- Unique ID
-    text TEXT NOT NULL UNIQUE                                  -- Name of tye node type
+    name TEXT NOT NULL UNIQUE                                  -- Name of tye node type
 );
 
 -- Table: EdgeType
     CREATE TABLE EdgeType(
     id INTEGER PRIMARY KEY,                                    -- Unique ID
-    text TEXT NOT NULL UNIQUE                                  -- Name of the edge type
+    name TEXT NOT NULL UNIQUE                                  -- Name of the edge type
 );
 
 -- Table: SourceFile

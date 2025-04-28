@@ -252,7 +252,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 {
                     IOperation? operation = _semanticModel.GetOperation(node) ?? _semanticModel.GetOperation(node.Body) ?? _semanticModel.GetOperation(node.ExpressionBody);
                     IBlockOperation? blockOperation = operation as IBlockOperation;
-                    if (blockOperation == null)
+                    if (blockOperation != null)
                     {
                         ControlFlowGraph cfg = ControlFlowGraph.Create(blockOperation);
 

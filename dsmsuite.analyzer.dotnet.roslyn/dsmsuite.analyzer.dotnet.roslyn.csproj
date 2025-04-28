@@ -11,12 +11,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.13.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="4.13.0" />
     <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="9.0.4" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Data\schema.sql">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.11" />
   </ItemGroup>
 
 </Project>
