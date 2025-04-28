@@ -1,4 +1,5 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Data;
+using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
     public interface ICodeAnalyzer
     {
+     
         Task AnalyzeAsync(string solutionPath, IGraphBuilder graphBuilder);
+        void Save(IGraphRepository graphRepository);
     }
 }
