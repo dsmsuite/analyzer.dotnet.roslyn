@@ -8,9 +8,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private ISymbol _symbol;
         private SyntaxNode _syntaxNode;
         private NodeType _nodeType;
-        private int? _cyclomaticComplexity;
+        private int _cyclomaticComplexity;
 
-        public Node(int id, ISymbol symbol, SyntaxNode syntaxNode, NodeType nodeType, int? cyclomaticComplexity)
+        public Node(int id, ISymbol symbol, SyntaxNode syntaxNode, NodeType nodeType, int cyclomaticComplexity)
         {
             _id = id;
             _symbol = symbol;
@@ -28,6 +28,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         public int Startline => _syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line;
         public int Endline => _syntaxNode.GetLocation().GetLineSpan().EndLinePosition.Line;
         public int LinesOfCode => Endline - Startline + 1;
-        public int? CyclomaticComplexity => _cyclomaticComplexity;
+        public int CyclomaticComplexity => _cyclomaticComplexity;
     }
 }

@@ -29,7 +29,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                             if (syntaxTree == null || semanticModel == null) continue;
 
                             var root = await syntaxTree.GetRootAsync();
-                            var visitor = new DependencyVisitor(semanticModel, codeAnalysisResult);
+                            var visitor = new SyntaxNodeVisitor(semanticModel, codeAnalysisResult);
                             visitor.Visit(root);
                         }
                     }

@@ -22,10 +22,10 @@ CREATE TABLE Node(
     end_line_no INTEGER NOT NULL,                              -- The line number where the node source code ends
     lines_of_code INTEGER,                                     -- The optional lines of code metric
     complexity INTEGER,                                        -- The optional cylomatic complexity metric for functions
-    documentation TEXT,                                        -- The optional documentation as found in the source code
+    documentation TEXT,                                        -- An optional documentation as found in the source code
     annotation TEXT,                                           -- An optional annotation based on human or ai evaluation
 
-    FOREIGN KEY(parent_id) REFERENCES Node(id),
+    -- FOREIGN KEY(parent_id) REFERENCES Node(id),
     FOREIGN KEY(node_type_id) REFERENCES NodeType(id),
     FOREIGN KEY(source_file_id) REFERENCES SourceFile(id)
 );

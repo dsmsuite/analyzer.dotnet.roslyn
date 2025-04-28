@@ -1,5 +1,6 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Data;
 using Microsoft.CodeAnalysis;
+using System.Xml.Linq;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
@@ -43,7 +44,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
-        public int? RegisterNode(ISymbol symbol, NodeType nodeType, SyntaxNode syntaxNode, int? cyclomaticComplexity)
+        public int? RegisterNode(ISymbol symbol, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)
         {
             _nodeIndex++;
             Node node = new Node(_nodeIndex, symbol, syntaxNode, nodeType, cyclomaticComplexity);
@@ -57,18 +58,22 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
         public int? RegisterEdge(ISymbol source, ISymbol target, EdgeType edgeType)
         {
-            _edgeIndex++;
-            if (_nodes.ContainsKey(source) && _nodes.ContainsKey(target))
+            if (!_nodes.ContainsKey(source))
             {
+                Console.WriteLine($"Edge source not found: {source.Name}");
+            }
+            else if (!_nodes.ContainsKey(target))
+            {
+                Console.WriteLine($"Edge target not found: {target.Name}");
+            }
+            else
+            { 
+                _edgeIndex++;
                 Node sourceNode = _nodes[source];
                 Node targetNode = _nodes[target];
                 _edges.Add(new Edge(_edgeIndex, sourceNode, targetNode, edgeType));
 
                 RegisterEdgeType(edgeType);
-            }
-            else
-            {
-
             }
 
             return null;

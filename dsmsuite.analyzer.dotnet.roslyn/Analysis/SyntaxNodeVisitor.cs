@@ -6,16 +6,12 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
-    // Roslyn visitors(like CSharpSyntaxWalker) are recursive.
-    // -If you don't call base.VisitXXX(node), you are responsible for visiting any children manually.
-    // -If you do call base.VisitXXX(node), Roslyn will automatically visit all the child nodes for you.
-    // This is usually the easiest way to make sure you don't miss anything deeper inside.
-    public class DependencyVisitor : CSharpSyntaxWalker
+    public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         private readonly SemanticModel _semanticModel;
         private readonly ICodeAnalysisResult _codeAnalysisResult;
 
-        public DependencyVisitor(SemanticModel semanticModel, ICodeAnalysisResult codeAnalysisResult)
+        public SyntaxNodeVisitor(SemanticModel semanticModel, ICodeAnalysisResult codeAnalysisResult)
         {
             _semanticModel = semanticModel;
             _codeAnalysisResult = codeAnalysisResult;
@@ -43,11 +39,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
-        private bool IsVoid(ITypeSymbol typeSymbol)
-        {
-            return typeSymbol.SpecialType == SpecialType.System_Void;
-        }
-
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
             base.VisitMethodDeclaration(node);
@@ -55,10 +46,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (methodSymbol != null)
             {
-                int? cyclomaticComplexity = CalculateCyclomaticComplexity(node);
+                int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
 
                 _codeAnalysisResult.RegisterNode(methodSymbol, NodeType.Method, node, cyclomaticComplexity);
-
 
                 if (methodSymbol != null)
                 {
@@ -72,7 +62,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                         _codeAnalysisResult.RegisterEdge(methodSymbol, parameter.Type, EdgeType.Parameter);
                     }
 
-                    if (methodSymbol.IsOverride)
+                    if (methodSymbol.IsOverride && methodSymbol.OverriddenMethod != null)
                     {
                         _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.OverriddenMethod, EdgeType.Overrride);
                     }
@@ -104,6 +94,17 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 {
                     _codeAnalysisResult.RegisterNode(fieldSymbol, NodeType.Field, node);
                 }
+            }
+        }
+
+        public override void VisitEventFieldDeclaration(EventFieldDeclarationSyntax node)
+        {
+            base.VisitEventFieldDeclaration(node); 
+
+            var eventSymbol = _semanticModel.GetDeclaredSymbol(node);
+            if (eventSymbol != null)
+            {
+                _codeAnalysisResult.RegisterNode(eventSymbol, NodeType.Event, node);
             }
         }
 
@@ -147,7 +148,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             if (structSymbol != null)
             {
                 _codeAnalysisResult.RegisterNode(structSymbol, NodeType.Struct, node);
-
             }
         }
 
@@ -249,9 +249,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             return "<outside method>";
         }
 
-        private int? CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
+        private int CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
         {
-            int? cyclomaticComplexity = null;
+            int cyclomaticComplexity = 0;
 
             if (node != null)
             {
@@ -286,6 +286,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
 
             return cyclomaticComplexity;
+        }
+
+        private bool IsVoid(ITypeSymbol typeSymbol)
+        {
+            return typeSymbol.SpecialType == SpecialType.System_Void;
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using SQLitePCL;
+using System.Xml.Linq;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Data
 {
@@ -64,8 +65,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
                     command.CommandText = @"INSERT INTO EdgeType (id, name)
                                             VALUES (@id, @name);";
 
-                    command.Parameters.AddWithValue("id", id);
-                    command.Parameters.AddWithValue("name", name);
+                    command.Parameters.AddWithValue("@id", id);
+                    command.Parameters.AddWithValue("@name", name);
 
                     command.ExecuteNonQuery();
                 }
@@ -76,10 +77,58 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
         public void SaveSourceFilename(int id, string filename)
         {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
 
+                using var transaction = connection.BeginTransaction();
+
+                // Create a table
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = @"INSERT INTO SourceFile (id, filename)
+                                            VALUES (@id, @filename);";
+
+                    command.Parameters.AddWithValue("@id", id);
+                    command.Parameters.AddWithValue("@filename", filename);
+
+                    command.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
         }
-        public void SaveNode(int id, string name, int nodeTypeId, int? parentId, int filenameId, int begin, int end, int loc, int? cyclomaticComplexity)
+        public void SaveNode(int id, string name, int nodeTypeId, int? parentId, int filenameId, int begin, int end, int loc, int cyclomaticComplexity)
         {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+
+                using var transaction = connection.BeginTransaction();
+
+                // Create a table
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = @"INSERT INTO Node (id, name, node_type_id, parent_id, source_file_id, begin_line_no, end_line_no, lines_of_code, complexity, documentation, annotation)
+                                            VALUES (@id,  @name, @node_type_id, @parent_id, @source_file_id, @begin_line_no, @end_line_no, @lines_of_code, @complexity, @documentation, @annotation);";
+
+                    command.Parameters.AddWithValue("@id", id);
+                    command.Parameters.AddWithValue("@name", name);
+                    command.Parameters.AddWithValue("@node_type_id", nodeTypeId);
+                    command.Parameters.AddWithValue("@parent_id", (object?)parentId ?? DBNull.Value);
+                    command.Parameters.AddWithValue("@source_file_id", filenameId);
+                    command.Parameters.AddWithValue("@begin_line_no", begin);
+                    command.Parameters.AddWithValue("@end_line_no", end);
+                    command.Parameters.AddWithValue("@lines_of_code", loc);
+                    command.Parameters.AddWithValue("@complexity", cyclomaticComplexity);
+                    command.Parameters.AddWithValue("@documentation", DBNull.Value);
+                    command.Parameters.AddWithValue("@annotation", DBNull.Value);
+                    command.ExecuteNonQuery();
+                }
+
+                transaction.Commit();
+            }
+
             //            id INTEGER PRIMARY KEY,                                    --Unique ID
             //parent_id INTEGER,                                         --The optional id of the parent node
             //    name TEXT NOT NULL,                                        --The namme of the node
