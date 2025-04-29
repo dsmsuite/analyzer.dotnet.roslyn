@@ -107,11 +107,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         {
             base.VisitEventFieldDeclaration(node);
 
-            var eventSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (eventSymbol != null)
+            foreach (VariableDeclaratorSyntax eventField in node.Declaration.Variables)
             {
-                INamedTypeSymbol containingType = eventSymbol.ContainingType;
-                _codeAnalysisResult.RegisterNode(eventSymbol, containingType, NodeType.Event, node);
+                IEventSymbol? eventFieldSymbol = _semanticModel.GetDeclaredSymbol(eventField) as IEventSymbol;
+
+                if (eventFieldSymbol != null)
+                {
+                    INamedTypeSymbol containingType = eventFieldSymbol.ContainingType;
+                    _codeAnalysisResult.RegisterNode(eventFieldSymbol, containingType, NodeType.Event, node);
+                }
             }
         }
 
