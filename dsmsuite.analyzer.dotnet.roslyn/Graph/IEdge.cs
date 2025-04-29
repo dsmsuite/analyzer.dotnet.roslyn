@@ -6,7 +6,5 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Graph
     {
         EdgeType EdgeType { get; }
         int Id { get; }
-        INode Source { get; }
-        INode Target { get; }
     }
 }

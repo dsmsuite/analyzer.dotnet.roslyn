@@ -59,23 +59,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
         public int? RegisterEdge(ISymbol source, ISymbol target, EdgeType edgeType)
         {
-            if (!_nodes.ContainsKey(source))
-            {
-                //Console.WriteLine($"Edge source not found: {source.Name}");
-            }
-            else if (!_nodes.ContainsKey(target))
-            {
-                //Console.WriteLine($"Edge target not found: {target.Name}");
-            }
-            else
-            {
-                _edgeIndex++;
-                Node sourceNode = _nodes[source];
-                Node targetNode = _nodes[target];
-                _edges.Add(new Edge(_edgeIndex, sourceNode, targetNode, edgeType));
+            _edgeIndex++;
 
-                RegisterEdgeType(edgeType);
-            }
+            _edges.Add(new Edge(_edgeIndex, source, target, edgeType));
+
+            RegisterEdgeType(edgeType);
 
             return null;
         }
@@ -84,7 +72,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         {
             foreach (Node node in _nodes.Values)
             {
-                 if (node.ContainingSymbol != null)
+                if (node.ContainingSymbol != null)
                 {
                     if (_nodes.ContainsKey(node.ContainingSymbol))
                     {
@@ -128,10 +116,24 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
             foreach (Edge edge in _edges)
             {
-                int? edgeTypeId = _edgeTypeIds[edge.EdgeType];
-                if (edgeTypeId != null)
+                if (!_nodes.ContainsKey(edge.Source))
                 {
-                    graphRepository.SaveEdge(edge.Id, edge.Source.Id, edge.Target.Id, edgeTypeId.Value, 1);
+                    //Console.WriteLine($"Edge source not found: {source.Name}");
+                }
+                else if (!_nodes.ContainsKey(edge.Target))
+                {
+                    //Console.WriteLine($"Edge target not found: {target.Name}");
+                }
+                else
+                {
+
+                    Node sourceNode = _nodes[edge.Source];
+                    Node targetNode = _nodes[edge.Target];
+                    int? edgeTypeId = _edgeTypeIds[edge.EdgeType];
+                    if (edgeTypeId != null)
+                    {
+                        graphRepository.SaveEdge(edge.Id, sourceNode.Id, targetNode.Id, edgeTypeId.Value, 1);
+                    }
                 }
             }
         }

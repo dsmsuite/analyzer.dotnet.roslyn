@@ -1,15 +1,16 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
+using Microsoft.CodeAnalysis;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
     public class Edge : IEdge
     {
         private int _id;
-        private Node _source;
-        private Node _target;
+        private ISymbol _source;
+        private ISymbol _target;
         private EdgeType _edgeType;
 
-        public Edge(int id, Node source, Node target, EdgeType edgeType)
+        public Edge(int id, ISymbol source, ISymbol target, EdgeType edgeType)
         {
             _id = id;
             _source = source;
@@ -18,8 +19,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         }
 
         public int Id => _id;
-        public INode Source => _source;
-        public INode Target => _target;
+        public ISymbol Source => _source;
+        public ISymbol Target => _target;
         public EdgeType EdgeType => _edgeType;
     }
 }
