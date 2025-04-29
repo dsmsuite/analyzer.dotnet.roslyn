@@ -169,25 +169,14 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         {
             base.VisitInvocationExpression(node);
 
-            IMethodSymbol? sourceMethodSymbol = null;
-            IMethodSymbol? targetMethodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
-
-            BaseMethodDeclarationSyntax containingMethodSyntax = node.Ancestors().OfType<BaseMethodDeclarationSyntax>().FirstOrDefault();
-            if (containingMethodSyntax != null)
+            var calledMethodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
+            if (calledMethodSymbol != null)
             {
-                SymbolInfo symbolInfo = _semanticModel.GetSymbolInfo(containingMethodSyntax);
-                sourceMethodSymbol = symbolInfo.Symbol as IMethodSymbol;
-
-                Console.WriteLine("?");
-            }
-
-            if (sourceMethodSymbol != null && targetMethodSymbol != null)
-            {
-                _codeAnalysisResult.RegisterEdge(sourceMethodSymbol, targetMethodSymbol, EdgeType.Call);
-            }
-            else
-            {
-
+                var containingMethod = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
+                if (containingMethod != null)
+                {
+                    _codeAnalysisResult.RegisterEdge(containingMethod, calledMethodSymbol, EdgeType.Call);
+                }
             }
         }
 
