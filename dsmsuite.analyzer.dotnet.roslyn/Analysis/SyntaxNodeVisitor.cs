@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using System.Runtime.InteropServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
@@ -217,22 +218,50 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
+        public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
+        {
+            base.VisitAssignmentExpression(node);
+
+            ISymbol? left = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
+            ISymbol? handler = _semanticModel.GetSymbolInfo(node.Right).Symbol;
+            if (left != null && handler != null)
+            {
+                if (node.IsKind(SyntaxKind.AddAssignmentExpression))
+                {
+                    _codeAnalysisResult.RegisterEdge(handler, left, EdgeType.Subscribes);
+                }
+
+                if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
+                {
+                    _codeAnalysisResult.RegisterEdge(handler, left, EdgeType.Unsubscribes);
+                }
+            }
+        }
+
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             base.VisitInvocationExpression(node);
 
-            var calledMethodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
+            IMethodSymbol? calledMethodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
             if (calledMethodSymbol != null)
             {
-                var containingMethod = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
+                IMethodSymbol? containingMethod = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
+
                 if (containingMethod != null)
                 {
-                    _codeAnalysisResult.RegisterEdge(containingMethod, calledMethodSymbol, EdgeType.Call);
-                    Console.WriteLine($"Call from {containingMethod.Name} calls {calledMethodSymbol.Name}");
-                }
-                else
-                {
-                    //Console.WriteLine($"Edge caller for {calledMethodSymbol.Name} not found");
+                    if (calledMethodSymbol.MethodKind == MethodKind.DelegateInvoke)
+                    {
+                        var expr = node.Expression as MemberAccessExpressionSyntax;
+                        IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(expr?.Expression).Symbol as IEventSymbol;
+                            if (eventSymbol != null)
+                            {
+                                _codeAnalysisResult.RegisterEdge(containingMethod, eventSymbol, EdgeType.Triggers);
+                            }
+                    }
+                    else
+                    {
+                        _codeAnalysisResult.RegisterEdge(containingMethod, calledMethodSymbol, EdgeType.Call);
+                    }
                 }
             }
         }
@@ -244,72 +273,26 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             var symbolInfo = _semanticModel.GetSymbolInfo(node);
             var symbol = symbolInfo.Symbol;
 
-            if (symbol is ILocalSymbol || symbol is IParameterSymbol || symbol is IFieldSymbol)
+            var containingMethod = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
+            if (containingMethod != null)
             {
-                var containingMethod = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
-                if (containingMethod != null)
+                if (symbol is ILocalSymbol)
                 {
-                    _codeAnalysisResult.RegisterEdge(containingMethod, symbol, EdgeType.Usage);
-                    Console.WriteLine($"Usage from {containingMethod.Name} calls {symbol.Name}");
+                    _codeAnalysisResult.RegisterEdge(containingMethod, symbol, EdgeType.VariableUsage);
                 }
-                else
+                else if (symbol is IParameterSymbol)
                 {
-                    //Console.WriteLine($"Edge caller for {calledMethodSymbol.Name} not found");
+                    _codeAnalysisResult.RegisterEdge(containingMethod, symbol, EdgeType.ParameterUsage);
                 }
-            }
-
-            //base.VisitIdentifierName(node);
-            //var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
-            //var caller = node.GetEnclosingMethod(node);
-            //if (caller != null)
-            //{
-            //    if (symbol is ILocalSymbol localSymbol)
-            //    {
-            //        _codeAnalysisResult.RegisterEdge(caller, localSymbol, EdgeType.Usage);
-            //    }
-
-            //    if (symbol is IFieldSymbol fieldSymbol)
-            //    {
-            //        //Console.WriteLine($"Enum Field Usage: {fieldSymbol.Name} in method {GetEnclosingMethodName(node)}");
-            //    }
-
-            //    if (symbol is IFieldSymbol fieldSymbol2 && fieldSymbol2.ContainingType?.TypeKind == TypeKind.Struct)
-            //    {
-            //        // Console.WriteLine($"Struct Field Usage (Field): {fieldSymbol2.Name} in method {GetEnclosingMethodName(node)}");
-            //    }
-            //    else if (symbol is IPropertySymbol propertySymbol && propertySymbol.ContainingType?.TypeKind == TypeKind.Struct)
-            //    {
-            //        //Console.WriteLine($"Struct Field Usage (Property): {propertySymbol.Name} in method {GetEnclosingMethodName(node)}");
-            //    }
-            //}
-        }
-
-        private string GetEnclosingMethodName(SyntaxNode node)
-        {
-            var methodSyntax = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-            if (methodSyntax != null)
-            {
-                var methodSymbol = _semanticModel.GetDeclaredSymbol(methodSyntax);
-                return methodSymbol?.Name ?? "<unknown method>";
-            }
-
-            return "<outside method>";
-        }
-
-        private IMethodBodyOperation? GetMethodOperation(MethodDeclarationSyntax node)
-        {
-            // Get the operation for the body (must be parent, not just a block)
-            IMethodBodyOperation? methodOperation = _semanticModel.GetOperation(node) as IMethodBodyOperation;
-            if (methodOperation == null)
-            {
-                // Maybe it is an expression-bodied method
-                if (node.ExpressionBody != null)
+                else if (symbol is IFieldSymbol)
                 {
-                    methodOperation = _semanticModel.GetOperation(node.ExpressionBody) as IMethodBodyOperation;
+                    _codeAnalysisResult.RegisterEdge(containingMethod, symbol, EdgeType.FieldUsage);
                 }
             }
-
-            return methodOperation;
+            else
+            {
+                //Console.WriteLine($"Edge caller for {calledMethodSymbol.Name} not found");
+            }
         }
 
         private int CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
