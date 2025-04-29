@@ -176,6 +176,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 if (containingMethod != null)
                 {
                     _codeAnalysisResult.RegisterEdge(containingMethod, calledMethodSymbol, EdgeType.Call);
+                    Console.WriteLine($"Edge from {containingMethod.Name} calls {calledMethodSymbol.Name}");
+                }
+                else
+                {
+                    //Console.WriteLine($"Edge caller for {calledMethodSymbol.Name} not found");
                 }
             }
         }
@@ -188,21 +193,21 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
             if (symbol is ILocalSymbol localSymbol)
             {
-                Console.WriteLine($"Local Variable Usage: {localSymbol.Name} in method {GetEnclosingMethodName(node)}");
+                //Console.WriteLine($"Local Variable Usage: {localSymbol.Name} in method {GetEnclosingMethodName(node)}");
             }
 
             if (symbol is IFieldSymbol fieldSymbol && fieldSymbol.ContainingType?.TypeKind == TypeKind.Enum)
             {
-                Console.WriteLine($"Enum Field Usage: {fieldSymbol.Name} in method {GetEnclosingMethodName(node)}");
+                //Console.WriteLine($"Enum Field Usage: {fieldSymbol.Name} in method {GetEnclosingMethodName(node)}");
             }
 
             if (symbol is IFieldSymbol fieldSymbol2 && fieldSymbol2.ContainingType?.TypeKind == TypeKind.Struct)
             {
-                Console.WriteLine($"Struct Field Usage (Field): {fieldSymbol2.Name} in method {GetEnclosingMethodName(node)}");
+               // Console.WriteLine($"Struct Field Usage (Field): {fieldSymbol2.Name} in method {GetEnclosingMethodName(node)}");
             }
             else if (symbol is IPropertySymbol propertySymbol && propertySymbol.ContainingType?.TypeKind == TypeKind.Struct)
             {
-                Console.WriteLine($"Struct Field Usage (Property): {propertySymbol.Name} in method {GetEnclosingMethodName(node)}");
+                //Console.WriteLine($"Struct Field Usage (Property): {propertySymbol.Name} in method {GetEnclosingMethodName(node)}");
             }
         }
 

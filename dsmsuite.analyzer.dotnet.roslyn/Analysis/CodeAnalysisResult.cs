@@ -61,11 +61,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         {
             if (!_nodes.ContainsKey(source))
             {
-                Console.WriteLine($"Edge source not found: {source.Name}");
+                //Console.WriteLine($"Edge source not found: {source.Name}");
             }
             else if (!_nodes.ContainsKey(target))
             {
-                Console.WriteLine($"Edge target not found: {target.Name}");
+                //Console.WriteLine($"Edge target not found: {target.Name}");
             }
             else
             {
