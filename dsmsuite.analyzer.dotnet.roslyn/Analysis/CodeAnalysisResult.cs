@@ -45,10 +45,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
-        public int? RegisterNode(ISymbol symbol, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)
+        public int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)
         {
             _nodeIndex++;
-            Node node = new Node(_nodeIndex, symbol, syntaxNode, nodeType, cyclomaticComplexity);
+            Node node = new Node(_nodeIndex, symbol, parent, syntaxNode, nodeType, cyclomaticComplexity);
             _nodes[symbol] = node;
 
             RegisterNodeType(nodeType);
@@ -68,24 +68,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             return null;
         }
 
-        private void ResolveParents()
-        {
-            foreach (Node node in _nodes.Values)
-            {
-                if (node.ContainingSymbol != null)
-                {
-                    if (_nodes.ContainsKey(node.ContainingSymbol))
-                    {
-                        node.Parent = _nodes[node.ContainingSymbol];
-                    }
-                }
-            }
-        }
 
         public void Save(IGraphRepository graphRepository)
         {
-            ResolveParents();
-
             graphRepository.Create();
 
             foreach (KeyValuePair<NodeType, int> keyValuePair in _nodeTypeIds)
@@ -108,6 +93,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 int? filenameId = _filenameIds[node.Filename];
                 int? nodeTypeId = _nodeTypeIds[node.NodeType];
                 int? parentId = null;
+
+                if (node.Parent != null)
+                {
+                    if (_nodes.ContainsKey(node.Parent))
+                    {
+                        parentId = _nodes[node.Parent].Id;
+                    }
+                }
+
                 if (filenameId != null && nodeTypeId != null)
                 {
                     graphRepository.SaveNode(node.Id, node.Fullname, nodeTypeId.Value, parentId, filenameId.Value, node.Startline, node.Endline, node.CyclomaticComplexity);

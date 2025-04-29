@@ -26,7 +26,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             INamedTypeSymbol? classSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (classSymbol != null)
             {
-                _codeAnalysisResult.RegisterNode(classSymbol, NodeType.Class, node);
+                _codeAnalysisResult.RegisterNode(classSymbol, null, NodeType.Class, node);
 
                 if (classSymbol.BaseType != null && classSymbol.BaseType.SpecialType != SpecialType.System_Object)
                 {
@@ -48,9 +48,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (methodSymbol != null)
             {
+                INamedTypeSymbol containingType = methodSymbol.ContainingType;
+
                 int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
 
-                _codeAnalysisResult.RegisterNode(methodSymbol, NodeType.Method, node, cyclomaticComplexity);
+                _codeAnalysisResult.RegisterNode(methodSymbol, containingType, NodeType.Method, node, cyclomaticComplexity);
 
                 if (methodSymbol != null)
                 {
@@ -80,7 +82,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
             if (propertySymbol != null)
             {
-                _codeAnalysisResult.RegisterNode(propertySymbol, NodeType.Property, node);
+                INamedTypeSymbol containingType = propertySymbol.ContainingType;
+                _codeAnalysisResult.RegisterNode(propertySymbol, containingType, NodeType.Property, node);
             }
         }
 
@@ -94,7 +97,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
                 if (fieldSymbol != null)
                 {
-                    _codeAnalysisResult.RegisterNode(fieldSymbol, NodeType.Field, node);
+                    INamedTypeSymbol containingType = fieldSymbol.ContainingType;
+                    _codeAnalysisResult.RegisterNode(fieldSymbol, containingType, NodeType.Field, node);
                 }
             }
         }
@@ -106,7 +110,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             var eventSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (eventSymbol != null)
             {
-                _codeAnalysisResult.RegisterNode(eventSymbol, NodeType.Event, node);
+                INamedTypeSymbol containingType = eventSymbol.ContainingType;
+                _codeAnalysisResult.RegisterNode(eventSymbol, containingType, NodeType.Event, node);
             }
         }
 
@@ -117,7 +122,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             IEventSymbol? eventSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (eventSymbol != null)
             {
-                _codeAnalysisResult.RegisterNode(eventSymbol, NodeType.Event, node);
+                INamedTypeSymbol containingType = eventSymbol.ContainingType;
+                _codeAnalysisResult.RegisterNode(eventSymbol, containingType, NodeType.Event, node);
             }
         }
 
@@ -128,7 +134,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             INamedTypeSymbol? enumSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (enumSymbol != null)
             {
-                _codeAnalysisResult.RegisterNode(enumSymbol, NodeType.Enum, node);
+                INamedTypeSymbol containingType = enumSymbol.ContainingType;
+                _codeAnalysisResult.RegisterNode(enumSymbol, containingType, NodeType.Enum, node);
 
                 foreach (EnumMemberDeclarationSyntax enumMemberNode in node.Members)
                 {
@@ -136,7 +143,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
                     if (enumValueSymbol != null)
                     {
-                        _codeAnalysisResult.RegisterNode(enumValueSymbol, NodeType.EnumValue, node);
+                        _codeAnalysisResult.RegisterNode(enumValueSymbol, enumSymbol, NodeType.EnumValue, node);
                     }
                 }
             }
@@ -149,7 +156,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             INamedTypeSymbol? structSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (structSymbol != null)
             {
-                _codeAnalysisResult.RegisterNode(structSymbol, NodeType.Struct, node);
+                _codeAnalysisResult.RegisterNode(structSymbol, null, NodeType.Struct, node);
             }
         }
 
@@ -161,7 +168,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(node) as ILocalSymbol;
             if (variableSymbol != null)
             {
-                _codeAnalysisResult.RegisterNode(variableSymbol, NodeType.Variable, node);
+                INamedTypeSymbol containingType = variableSymbol.ContainingType;
+                _codeAnalysisResult.RegisterNode(variableSymbol, containingType, NodeType.Variable, node);
             }
         }
 
