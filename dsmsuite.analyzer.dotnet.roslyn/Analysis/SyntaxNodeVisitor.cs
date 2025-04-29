@@ -131,6 +131,46 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
+        public override void VisitGenericName(GenericNameSyntax node)
+        {
+            // Get the symbol information for the generic type  
+            var symbolInfo = _semanticModel.GetSymbolInfo(node);
+            var symbol = symbolInfo.Symbol;
+
+            if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericType)
+            {
+                Console.WriteLine($"Generic Type: {namedTypeSymbol.Name}");
+
+                // Analyze type arguments  
+                foreach (var typeArgument in namedTypeSymbol.TypeArguments)
+                {
+                    Console.WriteLine($"Type Argument: {typeArgument.Name}");
+                }
+            }
+
+            base.VisitGenericName(node);
+        }
+
+        public override void VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
+        {
+            // Get the type being instantiated  
+            var typeInfo = _semanticModel.GetTypeInfo(node);
+            var namedTypeSymbol = typeInfo.Type as INamedTypeSymbol;
+
+            if (namedTypeSymbol != null && namedTypeSymbol.IsGenericType)
+            {
+                Console.WriteLine($"Instantiated Generic Type: {namedTypeSymbol.Name}");
+
+                // Analyze type arguments  
+                foreach (var typeArgument in namedTypeSymbol.TypeArguments)
+                {
+                    Console.WriteLine($"Type Argument: {typeArgument.Name}");
+                }
+            }
+
+            base.VisitObjectCreationExpression(node);
+        }
+
         public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
         {
             base.VisitEnumDeclaration(node);
