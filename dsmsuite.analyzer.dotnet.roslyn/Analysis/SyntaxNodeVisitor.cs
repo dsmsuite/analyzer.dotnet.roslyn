@@ -176,7 +176,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 if (containingMethod != null)
                 {
                     _codeAnalysisResult.RegisterEdge(containingMethod, calledMethodSymbol, EdgeType.Call);
-                    Console.WriteLine($"Edge from {containingMethod.Name} calls {calledMethodSymbol.Name}");
+                    Console.WriteLine($"Call from {containingMethod.Name} calls {calledMethodSymbol.Name}");
                 }
                 else
                 {
@@ -188,27 +188,48 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         public override void VisitIdentifierName(IdentifierNameSyntax node)
         {
             base.VisitIdentifierName(node);
+            // Get the symbol for the identifier  
+            var symbolInfo = _semanticModel.GetSymbolInfo(node);
+            var symbol = symbolInfo.Symbol;
 
-            var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
-
-            if (symbol is ILocalSymbol localSymbol)
+            if (symbol is ILocalSymbol || symbol is IParameterSymbol || symbol is IFieldSymbol)
             {
-                //Console.WriteLine($"Local Variable Usage: {localSymbol.Name} in method {GetEnclosingMethodName(node)}");
+                var containingMethod = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
+                if (containingMethod != null)
+                {
+                    _codeAnalysisResult.RegisterEdge(containingMethod, symbol, EdgeType.Usage);
+                    Console.WriteLine($"Usage from {containingMethod.Name} calls {symbol.Name}");
+                }
+                else
+                {
+                    //Console.WriteLine($"Edge caller for {calledMethodSymbol.Name} not found");
+                }
             }
 
-            if (symbol is IFieldSymbol fieldSymbol && fieldSymbol.ContainingType?.TypeKind == TypeKind.Enum)
-            {
-                //Console.WriteLine($"Enum Field Usage: {fieldSymbol.Name} in method {GetEnclosingMethodName(node)}");
-            }
+            //base.VisitIdentifierName(node);
+            //var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+            //var caller = node.GetEnclosingMethod(node);
+            //if (caller != null)
+            //{
+            //    if (symbol is ILocalSymbol localSymbol)
+            //    {
+            //        _codeAnalysisResult.RegisterEdge(caller, localSymbol, EdgeType.Usage);
+            //    }
 
-            if (symbol is IFieldSymbol fieldSymbol2 && fieldSymbol2.ContainingType?.TypeKind == TypeKind.Struct)
-            {
-               // Console.WriteLine($"Struct Field Usage (Field): {fieldSymbol2.Name} in method {GetEnclosingMethodName(node)}");
-            }
-            else if (symbol is IPropertySymbol propertySymbol && propertySymbol.ContainingType?.TypeKind == TypeKind.Struct)
-            {
-                //Console.WriteLine($"Struct Field Usage (Property): {propertySymbol.Name} in method {GetEnclosingMethodName(node)}");
-            }
+            //    if (symbol is IFieldSymbol fieldSymbol)
+            //    {
+            //        //Console.WriteLine($"Enum Field Usage: {fieldSymbol.Name} in method {GetEnclosingMethodName(node)}");
+            //    }
+
+            //    if (symbol is IFieldSymbol fieldSymbol2 && fieldSymbol2.ContainingType?.TypeKind == TypeKind.Struct)
+            //    {
+            //        // Console.WriteLine($"Struct Field Usage (Field): {fieldSymbol2.Name} in method {GetEnclosingMethodName(node)}");
+            //    }
+            //    else if (symbol is IPropertySymbol propertySymbol && propertySymbol.ContainingType?.TypeKind == TypeKind.Struct)
+            //    {
+            //        //Console.WriteLine($"Struct Field Usage (Property): {propertySymbol.Name} in method {GetEnclosingMethodName(node)}");
+            //    }
+            //}
         }
 
         private string GetEnclosingMethodName(SyntaxNode node)
