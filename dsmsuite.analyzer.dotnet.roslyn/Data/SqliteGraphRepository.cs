@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis;
+using Microsoft.Data.Sqlite;
 using SQLitePCL;
 using System.Xml.Linq;
 
@@ -59,8 +60,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
                 using var transaction = connection.BeginTransaction();
 
-                // Create a table
-                using (var command = connection.CreateCommand())
+                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = @"INSERT INTO EdgeType (id, name)
                                             VALUES (@id, @name);";
@@ -83,7 +83,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
                 using var transaction = connection.BeginTransaction();
 
-                // Create a table
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = @"INSERT INTO SourceFile (id, filename)
@@ -98,7 +97,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
                 transaction.Commit();
             }
         }
-        public void SaveNode(int id, string name, int nodeTypeId, int? parentId, int filenameId, int begin, int end, int loc, int cyclomaticComplexity)
+        public void SaveNode(int id, string name, int nodeTypeId, int? parentId, int filenameId, int begin, int end, int cyclomaticComplexity)
         {
             using (var connection = new SqliteConnection(_connectionString))
             {
@@ -106,11 +105,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
                 using var transaction = connection.BeginTransaction();
 
-                // Create a table
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = @"INSERT INTO Node (id, name, node_type_id, parent_id, source_file_id, begin_line_no, end_line_no, lines_of_code, complexity, documentation, annotation)
-                                            VALUES (@id,  @name, @node_type_id, @parent_id, @source_file_id, @begin_line_no, @end_line_no, @lines_of_code, @complexity, @documentation, @annotation);";
+                    command.CommandText = @"INSERT INTO Node (id, name, node_type_id, parent_id, source_file_id, begin_line_no, end_line_no, complexity, documentation, annotation)
+                                            VALUES (@id,  @name, @node_type_id, @parent_id, @source_file_id, @begin_line_no, @end_line_no, @complexity, @documentation, @annotation);";
 
                     command.Parameters.AddWithValue("@id", id);
                     command.Parameters.AddWithValue("@name", name);
@@ -119,7 +117,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
                     command.Parameters.AddWithValue("@source_file_id", filenameId);
                     command.Parameters.AddWithValue("@begin_line_no", begin);
                     command.Parameters.AddWithValue("@end_line_no", end);
-                    command.Parameters.AddWithValue("@lines_of_code", loc);
                     command.Parameters.AddWithValue("@complexity", cyclomaticComplexity);
                     command.Parameters.AddWithValue("@documentation", DBNull.Value);
                     command.Parameters.AddWithValue("@annotation", DBNull.Value);
@@ -128,70 +125,32 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
                 transaction.Commit();
             }
-
-            //            id INTEGER PRIMARY KEY,                                    --Unique ID
-            //parent_id INTEGER,                                         --The optional id of the parent node
-            //    name TEXT NOT NULL,                                        --The namme of the node
-            //    node_type_id INTEGER NOT NULL,                             --The node type
-            //    source_file_id INTEGER NOT NULL,                           --The source file where the node was found
-            //    begin_line_no INTEGER NOT NULL,                            --The line number where the node source code begins
-            //    end_line_no INTEGER NOT NULL,                              --The line number where the node source code ends
-            //    lines_of_code_metric INTEGER,                              --The optional lines of code metric
-            //    complexity INTEGER,                                        --The optional cylomatic complexity metric for functions
-            //    documentation TEXT, --The optional documentation as found in the source code
-            //    annotation TEXT, --An optional annotation based on human or ai evaluation
-
-            //using var connection = new SqliteConnection(_connectionString);
-            //connection.Open();
-
-            //using var transaction = connection.BeginTransaction();
-
-            //foreach (var node in nodes)
-            //{
-            //    var command = connection.CreateCommand();
-            //    command.CommandText = @"
-            //    INSERT INTO NodeDetails (name, node_type_id, location_id)
-            //    VALUES ($name, (SELECT id FROM NodeType WHERE text = $type), 1);
-
-            //    INSERT INTO Node (parent_id, loc, cc, detail_id, created)
-            //    VALUES ($parent, $loc, $cc, last_insert_rowid(), 1);";
-
-            //    command.Parameters.AddWithValue("$name", node.Name);
-            //    command.Parameters.AddWithValue("$type", node.Type);
-            //    command.Parameters.AddWithValue("$parent", node.ParentId ?? (object)DBNull.Value);
-            //    command.Parameters.AddWithValue("$loc", node.LinesOfCode);
-            //    command.Parameters.AddWithValue("$cc", node.CyclomaticComplexity ?? (object)DBNull.Value);
-            //    command.ExecuteNonQuery();
-            //}
-
-            //transaction.Commit();
         }
 
-        public void SaveEdge(int id, int sourceId, int targetId, int edgeTYpe, int strength)
+        public void SaveEdge(int id, int sourceId, int targetId, int edgeTypeId, int strength)
         {
-            //using var connection = new SqliteConnection(_connectionString);
-            //connection.Open();
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
 
-            //using var transaction = connection.BeginTransaction();
+            using var transaction = connection.BeginTransaction();
 
-            //foreach (var edge in edges)
-            //{
-            //    var command = connection.CreateCommand();
-            //    command.CommandText = @"
-            //    INSERT INTO EdgeDetails (edge_type_id, location_id)
-            //    VALUES ((SELECT id FROM EdgeType WHERE text = $type), 1);
+            using (var command = connection.CreateCommand())
+            { 
+                command.CommandText = @"INSERT INTO Edge (id, source_id, target_id, edge_type_id, strength, source_file_id, line_no, annotation)
+                                        VALUES (@id, @source_id, @target_id, @edge_type_id, @strength, @source_file_id, @line_no, @annotation);";
 
-            //    INSERT INTO Edge (source_id, target_id, strength, detail_id, created)
-            //    VALUES ($src, $tgt, $strength, last_insert_rowid(), 1);";
+                command.Parameters.AddWithValue("id", id);
+                command.Parameters.AddWithValue("source_id", sourceId);
+                command.Parameters.AddWithValue("target_id", targetId);
+                command.Parameters.AddWithValue("edge_type_id", edgeTypeId);
+                command.Parameters.AddWithValue("strength", strength);
+                command.Parameters.AddWithValue("source_file_id", DBNull.Value);
+                command.Parameters.AddWithValue("line_no", DBNull.Value);
+                command.Parameters.AddWithValue("annotation", DBNull.Value);
+                command.ExecuteNonQuery();
+            }
 
-            //    command.Parameters.AddWithValue("$src", edge.SourceId);
-            //    command.Parameters.AddWithValue("$tgt", edge.TargetId);
-            //    command.Parameters.AddWithValue("$strength", edge.Strength);
-            //    command.Parameters.AddWithValue("$type", edge.Type);
-            //    command.ExecuteNonQuery();
-            //}
-
-            //transaction.Commit();
+            transaction.Commit();
         }
     }
 }

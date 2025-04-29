@@ -7,7 +7,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
         void SaveNodeType(int id, string name);
         void SaveEdgeType(int id, string name);
         void SaveSourceFilename(int id, string filename);
-        void SaveNode(int id, string name, int nodeTypeId, int? parentId, int filenameId, int begin, int end, int loc, int cyclomaticComplexity);
-        void SaveEdge(int id, int sourceId, int targetId, int edgeTYpe, int strength);
+        void SaveNode(int id, string name, int nodeTypeId, int? parentId, int filenameId, int begin, int end, int cyclomaticComplexity);
+        void SaveEdge(int id, int sourceId, int targetId, int edgeTypeId, int strength);
     }
 }

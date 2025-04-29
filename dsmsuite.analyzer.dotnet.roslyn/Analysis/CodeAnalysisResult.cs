@@ -1,4 +1,5 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Data;
+using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using System.Xml.Linq;
 
@@ -67,7 +68,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 Console.WriteLine($"Edge target not found: {target.Name}");
             }
             else
-            { 
+            {
                 _edgeIndex++;
                 Node sourceNode = _nodes[source];
                 Node targetNode = _nodes[target];
@@ -79,8 +80,24 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             return null;
         }
 
+        private void ResolveParents()
+        {
+            foreach (Node node in _nodes.Values)
+            {
+                 if (node.ContainingSymbol != null)
+                {
+                    if (_nodes.ContainsKey(node.ContainingSymbol))
+                    {
+                        node.Parent = _nodes[node.ContainingSymbol];
+                    }
+                }
+            }
+        }
+
         public void Save(IGraphRepository graphRepository)
         {
+            ResolveParents();
+
             graphRepository.Create();
 
             foreach (KeyValuePair<NodeType, int> keyValuePair in _nodeTypeIds)
@@ -97,21 +114,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             {
                 graphRepository.SaveSourceFilename(keyValuePair.Value, keyValuePair.Key);
             }
+
             foreach (Node node in _nodes.Values)
             {
                 int? filenameId = _filenameIds[node.Filename];
                 int? nodeTypeId = _nodeTypeIds[node.NodeType];
                 int? parentId = null;
-                if (node.Parent != null)
-                {
-                    if (_nodes.ContainsKey(node.Parent))
-                    {
-                        parentId = _nodes[node.Parent].Id;
-                    }
-                }
                 if (filenameId != null && nodeTypeId != null)
                 {
-                    graphRepository.SaveNode(node.Id, node.Fullname, nodeTypeId.Value, parentId, filenameId.Value, node.Startline, node.Endline, node.LinesOfCode, node.CyclomaticComplexity);
+                    graphRepository.SaveNode(node.Id, node.Fullname, nodeTypeId.Value, parentId, filenameId.Value, node.Startline, node.Endline, node.CyclomaticComplexity);
                 }
             }
 

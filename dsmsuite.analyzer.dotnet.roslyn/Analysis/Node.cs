@@ -1,8 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
+using Microsoft.CodeAnalysis;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
-    public class Node
+    public class Node : INode
     {
         private int _id;
         private ISymbol _symbol;
@@ -19,10 +20,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             _cyclomaticComplexity = cyclomaticComplexity;
         }
 
+        internal ISymbol? ContainingSymbol => _symbol.ContainingSymbol;
+
         public int Id => _id;
         public string Name => _symbol.Name;
         public string Fullname => _symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        public ISymbol? Parent => _symbol.ContainingSymbol;
+        public INode Parent { get; set; }
         public NodeType NodeType => _nodeType;
         public string Filename => _syntaxNode.SyntaxTree?.FilePath ?? "";
         public int Startline => _syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line;

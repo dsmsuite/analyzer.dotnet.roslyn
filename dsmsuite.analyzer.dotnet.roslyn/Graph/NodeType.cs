@@ -1,4 +1,4 @@
-﻿namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
+﻿namespace dsmsuite.analyzer.dotnet.roslyn.Graph
 {
     public enum NodeType
     {

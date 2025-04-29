@@ -1,6 +1,8 @@
-﻿namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
+﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
+
+namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
-    public class Edge
+    public class Edge : IEdge
     {
         private int _id;
         private Node _source;
@@ -16,8 +18,8 @@
         }
 
         public int Id => _id;
-        public Node Source => _source;
-        public Node Target => _target;
+        public INode Source => _source;
+        public INode Target => _target;
         public EdgeType EdgeType => _edgeType;
     }
 }

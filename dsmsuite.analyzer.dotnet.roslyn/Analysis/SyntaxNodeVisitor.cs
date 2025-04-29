@@ -1,4 +1,5 @@
-﻿using Microsoft.Build.Evaluation;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
+using Microsoft.Build.Evaluation;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -47,13 +48,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (methodSymbol != null)
             {
-                int cyclomaticComplexity = 0;
-
-                IBlockOperation operation = GetBlockOperation(node);
-                if (operation != null)
-                {
-                    cyclomaticComplexity = CalculateCyclomaticComplexity(operation);
-                }
+                int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
 
                 _codeAnalysisResult.RegisterNode(methodSymbol, NodeType.Method, node, cyclomaticComplexity);
 
@@ -174,48 +169,26 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         {
             base.VisitInvocationExpression(node);
 
-            var symbolInfo = _semanticModel.GetSymbolInfo(node);
+            IMethodSymbol? sourceMethodSymbol = null;
+            IMethodSymbol? targetMethodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
 
-            if (symbolInfo.Symbol is IMethodSymbol calledMethodSymbol)
-            {
-                // This is your target method
-                var targetMethod = calledMethodSymbol;
-
-                // You can get its containing type and method name
-                var targetTypeName = targetMethod.ContainingType.ToDisplayString();
-                var targetMethodName = targetMethod.Name;
-
-                // Now you have the target!
-            }
-
-            var containingMethodSyntax = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+            BaseMethodDeclarationSyntax containingMethodSyntax = node.Ancestors().OfType<BaseMethodDeclarationSyntax>().FirstOrDefault();
             if (containingMethodSyntax != null)
             {
-                var sourceMethodSymbol = _semanticModel.GetDeclaredSymbol(containingMethodSyntax);
+                SymbolInfo symbolInfo = _semanticModel.GetSymbolInfo(containingMethodSyntax);
+                sourceMethodSymbol = symbolInfo.Symbol as IMethodSymbol;
 
-                if (sourceMethodSymbol != null)
-                {
-                    var sourceTypeName = sourceMethodSymbol.ContainingType.ToDisplayString();
-                    var sourceMethodName = sourceMethodSymbol.Name;
-
-                    // Now you have the source!
-                }
+                Console.WriteLine("?");
             }
 
-            //var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
-            //if (symbol == null) return;
+            if (sourceMethodSymbol != null && targetMethodSymbol != null)
+            {
+                _codeAnalysisResult.RegisterEdge(sourceMethodSymbol, targetMethodSymbol, EdgeType.Call);
+            }
+            else
+            {
 
-            //// Example edge creation
-            //var edge = new GraphEdge
-            //{
-            //    SourceId = -1, // You'd resolve real node IDs in practice
-            //    TargetId = -1,
-            //    Type = "Calls",
-            //    Strength = 1
-            //};
-            //_graphBuilder.AddEdge(edge);
-
-            //base.VisitInvocationExpression(node);
+            }
         }
 
         public override void VisitIdentifierName(IdentifierNameSyntax node)
@@ -256,48 +229,45 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             return "<outside method>";
         }
 
-        private IBlockOperation? GetBlockOperation(MethodDeclarationSyntax node)
+        private IMethodBodyOperation? GetMethodOperation(MethodDeclarationSyntax node)
         {
-            IBlockOperation? operation = null;
-            if (node.Body != null)
+            // Get the operation for the body (must be parent, not just a block)
+            IMethodBodyOperation? methodOperation = _semanticModel.GetOperation(node) as IMethodBodyOperation;
+            if (methodOperation == null)
             {
-                operation = _semanticModel.GetOperation(node.Body) as IBlockOperation;
-            }
-
-            if (node.ExpressionBody != null)
-            {
-                operation = _semanticModel.GetOperation(node.ExpressionBody) as IBlockOperation;
-            }
-
-            return operation;
-        }
-
-        private int CalculateCyclomaticComplexity(IBlockOperation blockOperation)
-        {
-            int cyclomaticComplexity = 0;
-
-            if (blockOperation != null)
-            {
-                ControlFlowGraph cfg = ControlFlowGraph.Create(blockOperation);
-
-                if (cfg == null)
+                // Maybe it is an expression-bodied method
+                if (node.ExpressionBody != null)
                 {
-                    int nodes = cfg.Blocks.Length;
-                    int edges = 0;
-
-                    foreach (var block in cfg.Blocks)
-                    {
-                        if (block.ConditionalSuccessor?.Destination != null)
-                            edges++;
-
-                        if (block.FallThroughSuccessor?.Destination != null)
-                            edges++;
-                    }
-
-                    int p = 1; // assume 1 connected component for a method
-                    cyclomaticComplexity = edges - nodes + (2 * p);
+                    methodOperation = _semanticModel.GetOperation(node.ExpressionBody) as IMethodBodyOperation;
                 }
             }
+
+            return methodOperation;
+        }
+
+        private int CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
+        {
+            int cyclomaticComplexity = 1;
+
+            var cfg = ControlFlowGraph.Create(node, _semanticModel);
+            if (cfg != null)
+            {
+                int nodes = cfg.Blocks.Length;
+                int edges = 0;
+
+                foreach (var block in cfg.Blocks)
+                {
+                    if (block.ConditionalSuccessor?.Destination != null)
+                        edges++;
+
+                    if (block.FallThroughSuccessor?.Destination != null)
+                        edges++;
+                }
+
+                int p = 1; // assume 1 connected component for a method
+                cyclomaticComplexity = edges - nodes + (2 * p);
+            }
+
 
             return cyclomaticComplexity;
         }
