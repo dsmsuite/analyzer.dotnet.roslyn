@@ -6,6 +6,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
     public interface ICodeAnalysisResult
     {
+        string CreateErrorMessage(SyntaxNode syntaxNode, string message);
         int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity = 0);
         int? RegisterEdge(ISymbol source, ISymbol target, EdgeType edgeType);
 

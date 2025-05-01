@@ -1,4 +1,5 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
+using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.Build.Evaluation;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -40,6 +41,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     _codeAnalysisResult.RegisterEdge(classSymbol, interfaceType, EdgeType.Implements);
                 }
             }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "ClassSymbol not found"));
+            }
         }
 
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
@@ -55,25 +60,27 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
                 _codeAnalysisResult.RegisterNode(methodSymbol, containingType, NodeType.Method, node, cyclomaticComplexity);
 
-                if (methodSymbol != null)
+                if (!IsVoid(methodSymbol.ReturnType))
                 {
-                    if (!IsVoid(methodSymbol.ReturnType))
-                    {
-                        _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.ReturnType, EdgeType.Returns);
-                    }
+                    _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.ReturnType, EdgeType.Returns);
+                }
 
-                    foreach (IParameterSymbol parameter in methodSymbol.Parameters)
-                    {
-                        _codeAnalysisResult.RegisterEdge(methodSymbol, parameter.Type, EdgeType.Parameter);
-                    }
+                foreach (IParameterSymbol parameter in methodSymbol.Parameters)
+                {
+                    _codeAnalysisResult.RegisterEdge(methodSymbol, parameter.Type, EdgeType.Parameter);
+                }
 
-                    if (methodSymbol.IsOverride && methodSymbol.OverriddenMethod != null)
-                    {
-                        _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.OverriddenMethod, EdgeType.Overrride);
-                    }
+                if (methodSymbol.IsOverride && methodSymbol.OverriddenMethod != null)
+                {
+                    _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.OverriddenMethod, EdgeType.Overrride);
                 }
             }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "MethodSymbol not found"));
+            }
         }
+
 
         public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
         {
@@ -85,6 +92,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             {
                 INamedTypeSymbol containingType = propertySymbol.ContainingType;
                 _codeAnalysisResult.RegisterNode(propertySymbol, containingType, NodeType.Property, node);
+            }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "PropertySymbol not found"));
             }
         }
 
@@ -100,6 +111,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 {
                     INamedTypeSymbol containingType = fieldSymbol.ContainingType;
                     _codeAnalysisResult.RegisterNode(fieldSymbol, containingType, NodeType.Field, node);
+                }
+                else
+                {
+                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "FieldSymbol not found"));
                 }
             }
         }
@@ -117,6 +132,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     INamedTypeSymbol containingType = eventFieldSymbol.ContainingType;
                     _codeAnalysisResult.RegisterNode(eventFieldSymbol, containingType, NodeType.Event, node);
                 }
+                else
+                {
+                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventFieldSymbol not found"));
+                }
             }
         }
 
@@ -130,46 +149,54 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 INamedTypeSymbol containingType = eventSymbol.ContainingType;
                 _codeAnalysisResult.RegisterNode(eventSymbol, containingType, NodeType.Event, node);
             }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventSymbol not found"));
+            }
         }
 
         public override void VisitGenericName(GenericNameSyntax node)
         {
+            base.VisitGenericName(node);
+
             // Get the symbol information for the generic type  
             var symbolInfo = _semanticModel.GetSymbolInfo(node);
             var symbol = symbolInfo.Symbol;
 
             if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericType)
             {
-                Console.WriteLine($"Generic Type: {namedTypeSymbol.Name}");
+                Logger.LogInfo($"Generic Type: {namedTypeSymbol.Name}"); // TODO: Implement Line = 168 Count = 64
 
                 // Analyze type arguments  
                 foreach (var typeArgument in namedTypeSymbol.TypeArguments)
                 {
-                    Console.WriteLine($"Type Argument: {typeArgument.Name}");
+                    Logger.LogInfo($"Type Argument: {typeArgument.Name}"); // TODDO: Implement Line=173 Count=759
                 }
             }
 
-            base.VisitGenericName(node);
+
         }
 
         public override void VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
         {
+            base.VisitObjectCreationExpression(node);
+
             // Get the type being instantiated  
             var typeInfo = _semanticModel.GetTypeInfo(node);
             var namedTypeSymbol = typeInfo.Type as INamedTypeSymbol;
 
             if (namedTypeSymbol != null && namedTypeSymbol.IsGenericType)
             {
-                Console.WriteLine($"Instantiated Generic Type: {namedTypeSymbol.Name}");
+                Logger.LogInfo($"Instantiated Generic Type: {namedTypeSymbol.Name}");
 
                 // Analyze type arguments  
                 foreach (var typeArgument in namedTypeSymbol.TypeArguments)
                 {
-                    Console.WriteLine($"Type Argument: {typeArgument.Name}");
+                    Logger.LogInfo($"Type Argument: {typeArgument.Name}");
                 }
             }
 
-            base.VisitObjectCreationExpression(node);
+
         }
 
         public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
@@ -190,7 +217,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     {
                         _codeAnalysisResult.RegisterNode(enumValueSymbol, enumSymbol, NodeType.EnumValue, node);
                     }
+                    else
+                    {
+                        Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EnumValueSymbol not found"));
+                    }
                 }
+            }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EnumSymbol not found"));
             }
         }
 
@@ -202,6 +237,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             if (structSymbol != null)
             {
                 _codeAnalysisResult.RegisterNode(structSymbol, null, NodeType.Struct, node);
+            }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "StructSymbol not found"));
             }
         }
 
@@ -216,25 +255,40 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 INamedTypeSymbol containingType = variableSymbol.ContainingType;
                 _codeAnalysisResult.RegisterNode(variableSymbol, containingType, NodeType.Variable, node);
             }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "VariableSymbol not found")); // TODO: Fix Line=260 Count=622
+            }
         }
 
         public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
         {
             base.VisitAssignmentExpression(node);
 
-            ISymbol? left = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
-            ISymbol? handler = _semanticModel.GetSymbolInfo(node.Right).Symbol;
-            if (left != null && handler != null)
+            ISymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
+            ISymbol? eventHandlerSymbol = _semanticModel.GetSymbolInfo(node.Right).Symbol;
+            if (eventSymbol != null)
             {
-                if (node.IsKind(SyntaxKind.AddAssignmentExpression))
+                if (eventHandlerSymbol != null)
                 {
-                    _codeAnalysisResult.RegisterEdge(handler, left, EdgeType.Subscribes);
-                }
+                    if (node.IsKind(SyntaxKind.AddAssignmentExpression))
+                    {
+                        _codeAnalysisResult.RegisterEdge(eventHandlerSymbol, eventSymbol, EdgeType.Subscribes);
+                    }
 
-                if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
-                {
-                    _codeAnalysisResult.RegisterEdge(handler, left, EdgeType.Unsubscribes);
+                    if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
+                    {
+                        _codeAnalysisResult.RegisterEdge(eventHandlerSymbol, eventSymbol, EdgeType.Unsubscribes);
+                    }
                 }
+                else
+                {
+                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventSymbol not found")); // TODO: Fix Line=286 Count=19
+                }
+            }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventHandlerSymbol not found")); // TODO: Fix Line=291 Count=1098
             }
         }
 
@@ -245,53 +299,75 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             IMethodSymbol? calledMethodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
             if (calledMethodSymbol != null)
             {
-                IMethodSymbol? containingMethod = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
+                IMethodSymbol? callingMethodSymbol = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
 
-                if (containingMethod != null)
+                if (callingMethodSymbol != null)
                 {
                     if (calledMethodSymbol.MethodKind == MethodKind.DelegateInvoke)
                     {
-                        var expr = node.Expression as MemberAccessExpressionSyntax;
-                        IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(expr?.Expression).Symbol as IEventSymbol;
-                            if (eventSymbol != null)
-                            {
-                                _codeAnalysisResult.RegisterEdge(containingMethod, eventSymbol, EdgeType.Triggers);
-                            }
+                        IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Expression).Symbol as IEventSymbol;
+                        if (eventSymbol != null)
+                        {
+                            _codeAnalysisResult.RegisterEdge(callingMethodSymbol, eventSymbol, EdgeType.Triggers);
+                        }
+                        else
+                        {
+                            Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventSymbol not found")); // TODO: Fix Line=315 Count=33
+                        }
                     }
                     else
                     {
-                        _codeAnalysisResult.RegisterEdge(containingMethod, calledMethodSymbol, EdgeType.Call);
+                        _codeAnalysisResult.RegisterEdge(callingMethodSymbol, calledMethodSymbol, EdgeType.Call);
                     }
                 }
+                else
+                {
+                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "CallingMethodSymbol not found")); // TODO: Fix Line=325 Count=9
+                }
+            }
+            else
+            {
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "CalledMethodSymbol not found")); // TODO: Fix Line=330 Count=13
             }
         }
 
         public override void VisitIdentifierName(IdentifierNameSyntax node)
         {
             base.VisitIdentifierName(node);
-            // Get the symbol for the identifier  
-            var symbolInfo = _semanticModel.GetSymbolInfo(node);
-            var symbol = symbolInfo.Symbol;
 
-            var containingMethod = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
-            if (containingMethod != null)
+            SymbolInfo symbolInfo = _semanticModel.GetSymbolInfo(node);
+            ISymbol? IdentifierNameSymbol = symbolInfo.Symbol;
+
+            if (IdentifierNameSymbol != null)
             {
-                if (symbol is ILocalSymbol)
+                IMethodSymbol callingMethodSymbol = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
+                if (callingMethodSymbol != null)
                 {
-                    _codeAnalysisResult.RegisterEdge(containingMethod, symbol, EdgeType.VariableUsage);
+                    if (callingMethodSymbol is ILocalSymbol)
+                    {
+                        _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.VariableUsage);
+                    }
+                    else if (callingMethodSymbol is IParameterSymbol)
+                    {
+                        _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.ParameterUsage);
+                    }
+                    else if (callingMethodSymbol is IFieldSymbol)
+                    {
+                        _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.FieldUsage);
+                    }
+                    else
+                    {
+                        Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "CallingMethod of unknown type")); // TODO: Fix Line=360 Count=22385
+                    }
                 }
-                else if (symbol is IParameterSymbol)
+                else
                 {
-                    _codeAnalysisResult.RegisterEdge(containingMethod, symbol, EdgeType.ParameterUsage);
-                }
-                else if (symbol is IFieldSymbol)
-                {
-                    _codeAnalysisResult.RegisterEdge(containingMethod, symbol, EdgeType.FieldUsage);
+                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "CallingMethodSymbol not found")); // TODO: Fix Line=365 Count=10292
                 }
             }
             else
             {
-                //Console.WriteLine($"Edge caller for {calledMethodSymbol.Name} not found");
+                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "IdentifierNameSymbol not found")); // TODO : Fix Line=370 Count=16
             }
         }
 

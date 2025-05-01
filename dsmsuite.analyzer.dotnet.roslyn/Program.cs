@@ -1,6 +1,11 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis;
 using dsmsuite.analyzer.dotnet.roslyn.Data;
+using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
+
+Logger.Init(Assembly.GetExecutingAssembly(), true);
+Logger.LogLevel = LogLevel.Error;
 
 if (args.Length < 2)
 {
@@ -13,25 +18,25 @@ FileInfo outputFileFileInfo = new FileInfo(Path.GetFullPath(args[1]));
 
 if (solutionFileInfo.Extension != ".sln")
 {
-    Console.WriteLine($"Input file {solutionFileInfo.FullName} does not a solution file");
+    Logger.LogUserMessage($"Input file {solutionFileInfo.FullName} does not a solution file");
     return;
 }
 
 if (outputFileFileInfo.Extension != ".sql")
 {
-    Console.WriteLine($"Output file {outputFileFileInfo.FullName} does not a database file");
+    Logger.LogUserMessage($"Output file {outputFileFileInfo.FullName} does not a database file");
     return;
 }
 
 if (!solutionFileInfo.Exists)
 {
-    Console.WriteLine($"Solution file {solutionFileInfo.FullName} does not exist");
+    Logger.LogUserMessage($"Solution file {solutionFileInfo.FullName} does not exist");
     return;
 }
 
 if (outputFileFileInfo.Exists)
 {
-    Console.WriteLine($"Solution file {outputFileFileInfo.FullName} already exists");
+    Logger.LogUserMessage($"Solution file {outputFileFileInfo.FullName} already exists");
     return;
 }
 
@@ -49,10 +54,6 @@ var repository = serviceProvider.GetRequiredService<IGraphRepository>();
 Console.WriteLine($"Analyzing code at: {solutionFileInfo.FullName}");
 await analyzer.AnalyzeAsync(solutionFileInfo.FullName, repository);
 
-//Console.WriteLine("Saving results to database at {outputFileFileInfo.FullName}");
-//repository.Create();
-//repository.SaveNodes(graphBuilder.GetAllNodes());
-//repository.SaveEdges(graphBuilder.GetAllEdges());
-
-Console.WriteLine("Done.");
+Logger.LogUserMessage("Done.");
+Logger.Flush();
 

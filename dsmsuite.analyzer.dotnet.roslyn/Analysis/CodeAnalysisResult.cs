@@ -1,5 +1,6 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Data;
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
+using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
 using System.Xml.Linq;
 
@@ -18,6 +19,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private readonly Dictionary<NodeType, int> _nodeTypeIds = [];
         private readonly Dictionary<EdgeType, int> _edgeTypeIds = [];
 
+
+        
         private void RegisterFilename(string filename)
         {
             if (!_filenameIds.ContainsKey(filename))
@@ -43,6 +46,14 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 _edgeTypeIndex++;
                 _edgeTypeIds[edgeType] = _edgeTypeIndex;
             }
+        }
+
+        public string CreateErrorMessage(SyntaxNode syntaxNode, string message)
+        {
+            string filename = syntaxNode.SyntaxTree?.FilePath ?? "";
+            int line = syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line;
+
+            return $"Error in file={filename} line={line} message={message}"; 
         }
 
         public int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)
