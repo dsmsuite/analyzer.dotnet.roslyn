@@ -1,6 +1,7 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.Build.Evaluation;
+using Microsoft.Build.Execution;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -23,12 +24,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
+            bool success = false;
+
             base.VisitClassDeclaration(node);
 
             INamedTypeSymbol? classSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (classSymbol != null)
             {
                 _codeAnalysisResult.RegisterNode(classSymbol, null, NodeType.Class, node);
+                success = true;
 
                 if (classSymbol.BaseType != null && classSymbol.BaseType.SpecialType != SpecialType.System_Object)
                 {
@@ -41,24 +45,23 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     _codeAnalysisResult.RegisterEdge(classSymbol, interfaceType, EdgeType.Implements);
                 }
             }
-            else
-            {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "ClassSymbol not found"));
-            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // OK:  Failed=0/233
         }
 
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
+            bool success = false;
+
             base.VisitMethodDeclaration(node);
 
             IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (methodSymbol != null)
             {
                 INamedTypeSymbol containingType = methodSymbol.ContainingType;
-
                 int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
-
                 _codeAnalysisResult.RegisterNode(methodSymbol, containingType, NodeType.Method, node, cyclomaticComplexity);
+                success = true;
 
                 if (!IsVoid(methodSymbol.ReturnType))
                 {
@@ -75,32 +78,33 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.OverriddenMethod, EdgeType.Overrride);
                 }
             }
-            else
-            {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "MethodSymbol not found"));
-            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // OK: Failed=0/1202
         }
 
 
         public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
         {
+            bool success = false;
+
             base.VisitPropertyDeclaration(node);
 
             IPropertySymbol? propertySymbol = _semanticModel.GetDeclaredSymbol(node);
-
             if (propertySymbol != null)
             {
                 INamedTypeSymbol containingType = propertySymbol.ContainingType;
                 _codeAnalysisResult.RegisterNode(propertySymbol, containingType, NodeType.Property, node);
+                success = true;
             }
-            else
-            {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "PropertySymbol not found"));
-            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // OK: Failed=0/517
         }
 
         public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
         {
+            int variableCount = node.Declaration.Variables.Count;
+            int successCount = 0;
+
             base.VisitFieldDeclaration(node);
 
             // Loop over all variables (multiple variables can be declared in one FieldDeclaration) e.g. 'private int x, y;'
@@ -111,16 +115,18 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 {
                     INamedTypeSymbol containingType = fieldSymbol.ContainingType;
                     _codeAnalysisResult.RegisterNode(fieldSymbol, containingType, NodeType.Field, node);
-                }
-                else
-                {
-                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "FieldSymbol not found"));
+                    successCount++;
                 }
             }
+
+            _codeAnalysisResult.RegisterResult(node, variableCount == successCount); // OK: Failed=0/59
         }
 
         public override void VisitEventFieldDeclaration(EventFieldDeclarationSyntax node)
         {
+            int variableCount = node.Declaration.Variables.Count;
+            int successCount = 0;
+
             base.VisitEventFieldDeclaration(node);
 
             foreach (VariableDeclaratorSyntax eventField in node.Declaration.Variables)
@@ -131,16 +137,17 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 {
                     INamedTypeSymbol containingType = eventFieldSymbol.ContainingType;
                     _codeAnalysisResult.RegisterNode(eventFieldSymbol, containingType, NodeType.Event, node);
-                }
-                else
-                {
-                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventFieldSymbol not found"));
+                    successCount++;
                 }
             }
+
+            _codeAnalysisResult.RegisterResult(node, variableCount == successCount); // OK: Failed=0/32
         }
 
         public override void VisitEventDeclaration(EventDeclarationSyntax node)
         {
+            bool success = false;
+
             base.VisitEventDeclaration(node);
 
             IEventSymbol? eventSymbol = _semanticModel.GetDeclaredSymbol(node);
@@ -148,15 +155,16 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             {
                 INamedTypeSymbol containingType = eventSymbol.ContainingType;
                 _codeAnalysisResult.RegisterNode(eventSymbol, containingType, NodeType.Event, node);
+                success = true;
             }
-            else
-            {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventSymbol not found"));
-            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // TODO: Implements smaple code to analyze
         }
 
         public override void VisitGenericName(GenericNameSyntax node)
         {
+            bool success = false;
+
             base.VisitGenericName(node);
 
             // Get the symbol information for the generic type  
@@ -174,11 +182,13 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 }
             }
 
-
+            _codeAnalysisResult.RegisterResult(node, success); // TOD0: Failed=645/645
         }
 
         public override void VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
         {
+            bool success = false;
+
             base.VisitObjectCreationExpression(node);
 
             // Get the type being instantiated  
@@ -195,12 +205,16 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     Logger.LogInfo($"Type Argument: {typeArgument.Name}");
                 }
             }
-
+            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=525/525
 
         }
 
         public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
         {
+            bool success = false;
+            int enumValueCount = node.Members.Count;
+            int successCount = 0;
+
             base.VisitEnumDeclaration(node);
 
             INamedTypeSymbol? enumSymbol = _semanticModel.GetDeclaredSymbol(node);
@@ -208,6 +222,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             {
                 INamedTypeSymbol containingType = enumSymbol.ContainingType;
                 _codeAnalysisResult.RegisterNode(enumSymbol, containingType, NodeType.Enum, node);
+                success = true;
 
                 foreach (EnumMemberDeclarationSyntax enumMemberNode in node.Members)
                 {
@@ -216,37 +231,35 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     if (enumValueSymbol != null)
                     {
                         _codeAnalysisResult.RegisterNode(enumValueSymbol, enumSymbol, NodeType.EnumValue, node);
-                    }
-                    else
-                    {
-                        Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EnumValueSymbol not found"));
+                        successCount++;
                     }
                 }
             }
-            else
-            {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EnumSymbol not found"));
-            }
+
+            _codeAnalysisResult.RegisterResult(node, success && enumValueCount == successCount); // OK: Failed=0/16
         }
 
         public override void VisitStructDeclaration(StructDeclarationSyntax node)
         {
+            bool success = false;
+
             base.VisitStructDeclaration(node);
 
             INamedTypeSymbol? structSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (structSymbol != null)
             {
                 _codeAnalysisResult.RegisterNode(structSymbol, null, NodeType.Struct, node);
+                success = true;
             }
-            else
-            {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "StructSymbol not found"));
-            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // OK:  Failed=0/1
         }
 
 
         public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
         {
+            bool success = false;
+
             base.VisitVariableDeclarator(node);
 
             ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(node) as ILocalSymbol;
@@ -254,15 +267,16 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             {
                 INamedTypeSymbol containingType = variableSymbol.ContainingType;
                 _codeAnalysisResult.RegisterNode(variableSymbol, containingType, NodeType.Variable, node);
+                success = true;
             }
-            else
-            {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "VariableSymbol not found")); // TODO: Fix Line=260 Count=622
-            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=622/2149
         }
 
         public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
         {
+            bool success = false;
+
             base.VisitAssignmentExpression(node);
 
             ISymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
@@ -274,26 +288,28 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     if (node.IsKind(SyntaxKind.AddAssignmentExpression))
                     {
                         _codeAnalysisResult.RegisterEdge(eventHandlerSymbol, eventSymbol, EdgeType.Subscribes);
+                        success = true;
                     }
 
                     if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
                     {
                         _codeAnalysisResult.RegisterEdge(eventHandlerSymbol, eventSymbol, EdgeType.Unsubscribes);
+                        success = true;
                     }
-                }
-                else
-                {
-                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventSymbol not found")); // TODO: Fix Line=286 Count=19
                 }
             }
             else
             {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventHandlerSymbol not found")); // TODO: Fix Line=291 Count=1098
+                success = true; // Assignement not relevant
             }
+
+            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=19/1169
         }
 
         public override void VisitInvocationExpression(InvocationExpressionSyntax node)
         {
+            bool success = false;
+
             base.VisitInvocationExpression(node);
 
             IMethodSymbol? calledMethodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
@@ -309,30 +325,35 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                         if (eventSymbol != null)
                         {
                             _codeAnalysisResult.RegisterEdge(callingMethodSymbol, eventSymbol, EdgeType.Triggers);
-                        }
-                        else
-                        {
-                            Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "EventSymbol not found")); // TODO: Fix Line=315 Count=33
+                            success = true;
                         }
                     }
                     else
                     {
                         _codeAnalysisResult.RegisterEdge(callingMethodSymbol, calledMethodSymbol, EdgeType.Call);
+                        success = true;
                     }
                 }
-                else
-                {
-                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "CallingMethodSymbol not found")); // TODO: Fix Line=325 Count=9
-                }
             }
-            else
+
+            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=55/4780
+        }
+
+        public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
+        {
+            var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+            if (symbol != null && _membersToTrack.Contains(symbol))
             {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "CalledMethodSymbol not found")); // TODO: Fix Line=330 Count=13
+                Console.WriteLine($"Member {symbol.Name} accessed at {node.GetLocation().GetLineSpan()}");
             }
+
+            base.VisitMemberAccessExpression(node);
         }
 
         public override void VisitIdentifierName(IdentifierNameSyntax node)
         {
+            bool success = false;
+
             base.VisitIdentifierName(node);
 
             SymbolInfo symbolInfo = _semanticModel.GetSymbolInfo(node);
@@ -346,29 +367,22 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     if (callingMethodSymbol is ILocalSymbol)
                     {
                         _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.VariableUsage);
+
                     }
                     else if (callingMethodSymbol is IParameterSymbol)
                     {
                         _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.ParameterUsage);
+                        success = true;
                     }
                     else if (callingMethodSymbol is IFieldSymbol)
                     {
                         _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.FieldUsage);
-                    }
-                    else
-                    {
-                        Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "CallingMethod of unknown type")); // TODO: Fix Line=360 Count=22385
+                        success = true;
                     }
                 }
-                else
-                {
-                    Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "CallingMethodSymbol not found")); // TODO: Fix Line=365 Count=10292
-                }
             }
-            else
-            {
-                Logger.LogError(_codeAnalysisResult.CreateErrorMessage(node, "IdentifierNameSymbol not found")); // TODO : Fix Line=370 Count=16
-            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=32693/32693
         }
 
         private int CalculateCyclomaticComplexity(MethodDeclarationSyntax node)

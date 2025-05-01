@@ -2,6 +2,7 @@
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Xml.Linq;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
@@ -48,12 +49,16 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
-        public string CreateErrorMessage(SyntaxNode syntaxNode, string message)
+        public void RegisterResult(SyntaxNode syntaxNode,
+                                     bool success,
+                                     [CallerFilePath] string sourceFile = "",
+                                     [CallerMemberName] string method = "",
+                                     [CallerLineNumber] int lineNumber = 0)
         {
-            string filename = syntaxNode.SyntaxTree?.FilePath ?? "";
-            int line = syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line;
+            string syntaxNodeFilename = syntaxNode.SyntaxTree?.FilePath ?? "";
+            int syntaxNodeline = syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line;
 
-            return $"Error in file={filename} line={line} message={message}"; 
+            Logger.LogResult(syntaxNodeFilename, syntaxNodeline, success, sourceFile, method, lineNumber);
         }
 
         public int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)

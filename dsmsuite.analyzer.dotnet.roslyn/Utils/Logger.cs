@@ -12,8 +12,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
     {
         private static Assembly _assembly;
         private static string _logPath;
-        private static readonly Dictionary<LogLocation, int> _locationLogCount;
-
+        private static readonly Dictionary<LogLocation, int> _locationLogTotalCount;
+        private static readonly Dictionary<LogLocation, int> _locationLogFailedCount;
         public class LogLocation
         {
             public LogLocation(string file, string method, int line)
@@ -45,7 +45,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
 
         static Logger()
         {
-            _locationLogCount = new Dictionary<LogLocation, int>();
+            _locationLogTotalCount = new Dictionary<LogLocation, int>();
+            _locationLogFailedCount = new Dictionary<LogLocation, int>();
         }
 
         public static void Init(Assembly assembly, bool logInCurrentDirectory)
@@ -121,12 +122,39 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
             LogToFile(LogLevel.Info, "infoMessages.log", sourceFile, method, lineNumber, "info", message);
          }
 
-        public static void LogDataModelMessage(string message,
+        public static void LogResult(string syntaxNodeFilename, 
+            int syntaxNodeline, 
+            bool success,
             [CallerFilePath] string sourceFile = "",
             [CallerMemberName] string method = "",
             [CallerLineNumber] int lineNumber = 0)
         {
-            LogToFile(LogLevel.Data, "dataModelMessages.log", sourceFile, method, lineNumber, "data", message);
+            LogLocation logLocation = new LogLocation(sourceFile, method, lineNumber);
+            IncrementLocationCount(_locationLogTotalCount, logLocation);
+
+            if (!success)
+            {
+                IncrementLocationCount(_locationLogFailedCount, logLocation);
+
+                LogError($"Failed to parse source code file={syntaxNodeFilename} line={syntaxNodeline}", sourceFile, method, lineNumber);
+            }
+        }
+
+        private static void IncrementLocationCount(Dictionary<LogLocation, int> locationLogCount, LogLocation logLocation)
+        {
+            if (locationLogCount.ContainsKey(logLocation))
+            {
+                locationLogCount[logLocation] = locationLogCount[logLocation] + 1;
+            }
+            else
+            {
+                locationLogCount[logLocation] = 1;
+            }
+        }
+
+        private static int GetLocationCount(Dictionary<LogLocation, int> locationLogCount, LogLocation logLocation)
+        {
+            return locationLogCount.ContainsKey(logLocation) ? locationLogCount[logLocation] : 0;
         }
 
         public static void Flush()
@@ -136,17 +164,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
 
         private static void LogToFile(LogLevel logLevel, string logFilename, string sourceFile, string method, int lineNumber, string  catagory, string message)
         {
-            LogLocation logLocation = new LogLocation(sourceFile, method, lineNumber);
-            if (_locationLogCount.ContainsKey(logLocation))
-            {
-                _locationLogCount[logLocation] = _locationLogCount[logLocation] + 1;
-            }
-            else
-            {
-                _locationLogCount[logLocation] = 1;
-            }
-
-            if (LogLevel >= logLevel)
+             if (LogLevel >= logLevel)
             {
                 string path = GetLogFullPath(logFilename);
                 FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
@@ -163,9 +181,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
             FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
             using (StreamWriter writer = new StreamWriter(fs))
             {
-                foreach (KeyValuePair<LogLocation,int> location in _locationLogCount)
-                { 
-                    writer.WriteLine($"File={location.Key.File} Method={location.Key.Method} Line={location.Key.Line} Count={location.Value}");
+                foreach (LogLocation location in _locationLogTotalCount.Keys)
+                {
+                    int failed = GetLocationCount(_locationLogFailedCount, location);
+                    int total = GetLocationCount(_locationLogTotalCount, location);
+                    writer.WriteLine($"File={location.File} Method={location.Method} Line={location.Line} Failed={failed}/{total}");
                 }
             }
         }
