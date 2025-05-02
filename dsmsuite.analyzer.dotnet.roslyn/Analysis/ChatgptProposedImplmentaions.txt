@@ -1,0 +1,217 @@
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Linq;
+
+public class DependencyWalker : CSharpSyntaxWalker
+{
+    private readonly SemanticModel _semanticModel;
+    private readonly ICodeAnalysisResult _result;
+
+    public DependencyWalker(SemanticModel semanticModel, ICodeAnalysisResult result)
+        : base(SyntaxWalkerDepth.Token)
+    {
+        _semanticModel = semanticModel;
+        _result = result;
+    }
+
+    // Namespace Declarations
+    public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Namespace);
+        base.VisitNamespaceDeclaration(node);
+    }
+
+    public override void VisitFileScopedNamespaceDeclaration(FileScopedNamespaceDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Namespace);
+        base.VisitFileScopedNamespaceDeclaration(node);
+    }
+
+    // Type Declarations
+    public override void VisitClassDeclaration(ClassDeclarationSyntax node)
+    {
+        var symbol = RegisterSymbol(node, NodeType.Class);
+        RegisterBaseTypes(symbol);
+        base.VisitClassDeclaration(node);
+    }
+
+    public override void VisitStructDeclaration(StructDeclarationSyntax node)
+    {
+        var symbol = RegisterSymbol(node, NodeType.Struct);
+        RegisterBaseTypes(symbol);
+        base.VisitStructDeclaration(node);
+    }
+
+    public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
+    {
+        var symbol = RegisterSymbol(node, NodeType.Interface);
+        RegisterBaseTypes(symbol);
+        base.VisitInterfaceDeclaration(node);
+    }
+
+    public override void VisitRecordDeclaration(RecordDeclarationSyntax node)
+    {
+        var symbol = RegisterSymbol(node, NodeType.Record);
+        RegisterBaseTypes(symbol);
+        base.VisitRecordDeclaration(node);
+    }
+
+    public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Enum);
+        base.VisitEnumDeclaration(node);
+    }
+
+    // Type Names
+    public override void VisitIdentifierName(IdentifierNameSyntax node) => RegisterTypeReference(node);
+    public override void VisitQualifiedName(QualifiedNameSyntax node) => RegisterTypeReference(node);
+    public override void VisitGenericName(GenericNameSyntax node) => RegisterTypeReference(node);
+    public override void VisitPredefinedType(PredefinedTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitArrayType(ArrayTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitPointerType(PointerTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitNullableType(NullableTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitTupleType(TupleTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitAliasQualifiedName(AliasQualifiedNameSyntax node) => RegisterTypeReference(node);
+
+    // Function Declarations
+    public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Method);
+        base.VisitMethodDeclaration(node);
+    }
+
+    public override void VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
+    {
+        RegisterSymbol(node, NodeType.LocalFunction);
+        base.VisitLocalFunctionStatement(node);
+    }
+
+    public override void VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Constructor);
+        base.VisitConstructorDeclaration(node);
+    }
+
+    public override void VisitDestructorDeclaration(DestructorDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Destructor);
+        base.VisitDestructorDeclaration(node);
+    }
+
+    public override void VisitOperatorDeclaration(OperatorDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Operator);
+        base.VisitOperatorDeclaration(node);
+    }
+
+    public override void VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.ConversionOperator);
+        base.VisitConversionOperatorDeclaration(node);
+    }
+
+    // Directives
+    public override void VisitUsingDirective(UsingDirectiveSyntax node)
+    {
+        RegisterSymbol(node.Name, NodeType.Using);
+        base.VisitUsingDirective(node);
+    }
+
+    public override void VisitExternAliasDirective(ExternAliasDirectiveSyntax node)
+    {
+        // No symbol resolution for alias name
+        base.VisitExternAliasDirective(node);
+    }
+
+    public override void VisitReferenceDirectiveTrivia(ReferenceDirectiveTriviaSyntax node)
+    {
+        // Reference directives are typically handled in metadata, not symbol model
+        base.VisitReferenceDirectiveTrivia(node);
+    }
+
+    // Expressions
+    public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+    {
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
+        var caller = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+        if (symbol != null && caller != null)
+        {
+            _result.RegisterEdge(caller, symbol, EdgeType.Calls);
+        }
+        base.VisitInvocationExpression(node);
+    }
+
+    public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
+    {
+        RegisterSymbol(node, NodeType.MemberAccess);
+        base.VisitMemberAccessExpression(node);
+    }
+
+    public override void VisitElementAccessExpression(ElementAccessExpressionSyntax node)
+    {
+        RegisterSymbol(node, NodeType.ElementAccess);
+        base.VisitElementAccessExpression(node);
+    }
+
+    public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
+    {
+        base.VisitConditionalAccessExpression(node);
+    }
+
+    // Attributes
+    public override void VisitAttribute(AttributeSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Attribute);
+        base.VisitAttribute(node);
+    }
+
+    public override void VisitAttributeList(AttributeListSyntax node)
+    {
+        base.VisitAttributeList(node);
+    }
+
+    // Type Parameters & Constraints
+    public override void VisitTypeParameterConstraintClause(TypeParameterConstraintClauseSyntax node)
+    {
+        base.VisitTypeParameterConstraintClause(node);
+    }
+
+    public override void VisitTypeParameter(TypeParameterSyntax node)
+    {
+        RegisterSymbol(node, NodeType.TypeParameter);
+        base.VisitTypeParameter(node);
+    }
+
+    // Helper Methods
+    private ISymbol? RegisterSymbol(SyntaxNode node, NodeType type)
+    {
+        var symbol = _semanticModel.GetDeclaredSymbol(node);
+        if (symbol != null)
+        {
+            _result.RegisterNode(symbol, symbol.ContainingSymbol, type, node);
+        }
+        return symbol;
+    }
+
+    private void RegisterTypeReference(TypeSyntax typeSyntax)
+    {
+        var symbol = _semanticModel.GetSymbolInfo(typeSyntax).Symbol;
+        if (symbol != null)
+        {
+            var context = _semanticModel.GetEnclosingSymbol(typeSyntax.SpanStart);
+            _result.RegisterEdge(context, symbol, EdgeType.TypeUsage);
+        }
+    }
+
+    private void RegisterBaseTypes(INamedTypeSymbol? symbol)
+    {
+        if (symbol == null) return;
+
+        if (symbol.BaseType != null && symbol.BaseType.SpecialType != SpecialType.System_Object)
+            _result.RegisterEdge(symbol, symbol.BaseType, EdgeType.InheritsFrom);
+
+        foreach (var iface in symbol.Interfaces)
+            _result.RegisterEdge(symbol, iface, EdgeType.Implements);
+    }
+}

@@ -1,0 +1,66 @@
+﻿public class DependencyAnalysisVisitor : CSharpSyntaxVisitor  
+{  
+    private readonly ICodeAnalysisResult _analysisResult;  
+    private readonly SemanticModel _semanticModel;  
+  
+    public DependencyAnalysisVisitor(ICodeAnalysisResult analysisResult, SemanticModel semanticModel)  
+    {  
+        _analysisResult = analysisResult;  
+        _semanticModel = semanticModel;  
+    }  
+  
+    public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)  
+    {  
+        var symbol = _semanticModel.GetDeclaredSymbol(node);  
+        _analysisResult.RegisterNode(symbol, null, NodeType.Namespace, node);  
+        base.VisitNamespaceDeclaration(node);  
+    }  
+  
+    public override void VisitClassDeclaration(ClassDeclarationSyntax node)  
+    {  
+        var symbol = _semanticModel.GetDeclaredSymbol(node);  
+        var parentSymbol = symbol?.ContainingNamespace;  
+        _analysisResult.RegisterNode(symbol, parentSymbol, NodeType.Class, node);  
+        base.VisitClassDeclaration(node);  
+    }  
+  
+    public override void VisitMethodDeclaration(MethodDeclarationSyntax node)  
+    {  
+        var symbol = _semanticModel.GetDeclaredSymbol(node);  
+        var parentSymbol = symbol?.ContainingType;  
+        _analysisResult.RegisterNode(symbol, parentSymbol, NodeType.Method, node);  
+        base.VisitMethodDeclaration(node);  
+    }  
+  
+    public override void VisitInvocationExpression(InvocationExpressionSyntax node)  
+    {  
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;  
+        if (symbol != null)  
+        {  
+            var sourceSymbol = _semanticModel.GetDeclaredSymbol(node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault());  
+            _analysisResult.RegisterEdge(sourceSymbol, symbol, EdgeType.MethodCall);  
+        }  
+        base.VisitInvocationExpression(node);  
+    }  
+  
+    public override void VisitUsingDirective(UsingDirectiveSyntax node)  
+    {  
+        var symbol = _semanticModel.GetSymbolInfo(node.Name).Symbol;  
+        if (symbol != null)  
+        {  
+            _analysisResult.RegisterNode(symbol, null, NodeType.UsingDirective, node);  
+        }  
+        base.VisitUsingDirective(node);  
+    }  
+  
+    public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node)  
+    {  
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol;  
+        if (symbol != null)  
+        {  
+            var sourceSymbol = _semanticModel.GetDeclaredSymbol(node.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault());  
+            _analysisResult.RegisterEdge(sourceSymbol, symbol, EdgeType.MemberAccess);  
+        }  
+        base.VisitMemberAccessExpression(node);  
+    }  
+}  

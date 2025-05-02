@@ -22,6 +22,22 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             _codeAnalysisResult = codeAnalysisResult;
         }
 
+        public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
+        {
+            bool success = false;
+
+            base.VisitNamespaceDeclaration(node);
+
+            ISymbol? namespaceSymbol = _semanticModel.GetDeclaredSymbol(node);
+            if (namespaceSymbol != null)
+            {
+                _codeAnalysisResult.RegisterNode(namespaceSymbol, null, NodeType.Namespace, node);
+                success = true;
+            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // OK:  Failed=0/275
+        }
+
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             bool success = false;
@@ -47,6 +63,27 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
 
             _codeAnalysisResult.RegisterResult(node, success); // OK:  Failed=0/233
+        }
+
+        public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
+        {
+            bool success = false;
+
+            base.VisitInterfaceDeclaration(node);
+
+            INamedTypeSymbol? interfaceSymbol = _semanticModel.GetDeclaredSymbol(node);
+            if (interfaceSymbol != null)
+            {
+                _codeAnalysisResult.RegisterNode(interfaceSymbol, null, NodeType.Interface, node);
+                success = true;
+
+                foreach (INamedTypeSymbol interfaceType in interfaceSymbol.Interfaces)
+                {
+                    _codeAnalysisResult.RegisterEdge(interfaceSymbol, interfaceType, EdgeType.Implements);
+                }
+            }
+
+            _codeAnalysisResult.RegisterResult(node, success); // OK Failed=0/52
         }
 
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
@@ -262,12 +299,20 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
             base.VisitVariableDeclarator(node);
 
-            ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(node) as ILocalSymbol;
+            ISymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(node);
             if (variableSymbol != null)
             {
                 INamedTypeSymbol containingType = variableSymbol.ContainingType;
                 _codeAnalysisResult.RegisterNode(variableSymbol, containingType, NodeType.Variable, node);
                 success = true;
+            }
+            else
+            {
+                // Temp
+                var s = _semanticModel.GetDeclaredSymbol(node);
+                if (s != null)
+                {
+                }
             }
 
             _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=622/2149
@@ -279,7 +324,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
             base.VisitAssignmentExpression(node);
 
-            ISymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
+            IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
             ISymbol? eventHandlerSymbol = _semanticModel.GetSymbolInfo(node.Right).Symbol;
             if (eventSymbol != null)
             {
@@ -290,12 +335,19 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                         _codeAnalysisResult.RegisterEdge(eventHandlerSymbol, eventSymbol, EdgeType.Subscribes);
                         success = true;
                     }
-
-                    if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
+                    else if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
                     {
                         _codeAnalysisResult.RegisterEdge(eventHandlerSymbol, eventSymbol, EdgeType.Unsubscribes);
                         success = true;
                     }
+                    else
+                    {
+
+                    }
+                }
+                else
+                {
+
                 }
             }
             else
@@ -334,6 +386,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                         success = true;
                     }
                 }
+                else
+                {
+                    var s = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+                    if (s != null) { }
+                }
             }
 
             _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=55/4780
@@ -341,11 +398,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
         public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
         {
-            var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
-            if (symbol != null && _membersToTrack.Contains(symbol))
-            {
-                Console.WriteLine($"Member {symbol.Name} accessed at {node.GetLocation().GetLineSpan()}");
-            }
+            //var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+            //if (symbol != null && _membersToTrack.Contains(symbol))
+            //{
+            //    Console.WriteLine($"Member {symbol.Name} accessed at {node.GetLocation().GetLineSpan()}");
+            //}
 
             base.VisitMemberAccessExpression(node);
         }
@@ -356,8 +413,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
             base.VisitIdentifierName(node);
 
-            SymbolInfo symbolInfo = _semanticModel.GetSymbolInfo(node);
-            ISymbol? IdentifierNameSymbol = symbolInfo.Symbol;
+            ISymbol? IdentifierNameSymbol = _semanticModel.GetSymbolInfo(node).Symbol;
 
             if (IdentifierNameSymbol != null)
             {
@@ -379,10 +435,26 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                         _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.FieldUsage);
                         success = true;
                     }
+                    else
+                    {
+
+                    }
+                }
+                else
+                {
+                    ISymbol symbol = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+                    if (symbol.IsImplicitlyDeclared)
+                    {
+                        success = true;
+                    }
+                    else
+                    {
+
+                    }
                 }
             }
 
-            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=32693/32693
+            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=25837/32693
         }
 
         private int CalculateCyclomaticComplexity(MethodDeclarationSyntax node)

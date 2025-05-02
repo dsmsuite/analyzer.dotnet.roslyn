@@ -2,7 +2,9 @@
 {
     public enum NodeType
     {
+        Namespace,
         Class,
+        Interface,
         Struct,
         Enum,
         EnumValue,
