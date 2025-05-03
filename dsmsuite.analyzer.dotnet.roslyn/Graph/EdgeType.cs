@@ -15,5 +15,8 @@
         Subscribes,
         Unsubscribes,
         Triggers,
+        TypeUsage,
+        InheritsFrom,
+        Calls
     }
 }

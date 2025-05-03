@@ -1,492 +1,258 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
-using dsmsuite.analyzer.dotnet.roslyn.Util;
-using Microsoft.Build.Evaluation;
-using Microsoft.Build.Execution;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis;
+using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FlowAnalysis;
-using Microsoft.CodeAnalysis.Operations;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 
-namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
+public class SyntaxNodeVisitor : CSharpSyntaxWalker
 {
-    public class SyntaxNodeVisitor : CSharpSyntaxWalker
+    private readonly SemanticModel _semanticModel;
+    private readonly ICodeAnalysisResult _result;
+
+    public SyntaxNodeVisitor(SemanticModel semanticModel, ICodeAnalysisResult result)
+        : base(SyntaxWalkerDepth.Token)
     {
-        private readonly SemanticModel _semanticModel;
-        private readonly ICodeAnalysisResult _codeAnalysisResult;
+        _semanticModel = semanticModel;
+        _result = result;
+    }
 
-        public SyntaxNodeVisitor(SemanticModel semanticModel, ICodeAnalysisResult codeAnalysisResult)
+    // Namespace Declarations
+    public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Namespace);
+        base.VisitNamespaceDeclaration(node);
+    }
+
+    public override void VisitFileScopedNamespaceDeclaration(FileScopedNamespaceDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Namespace);
+        base.VisitFileScopedNamespaceDeclaration(node);
+    }
+
+    // Type Declarations
+    public override void VisitClassDeclaration(ClassDeclarationSyntax node)
+    {
+        var symbol = RegisterSymbol(node, NodeType.Class) as INamedTypeSymbol;
+        RegisterBaseTypes(symbol);
+        base.VisitClassDeclaration(node);
+    }
+
+    public override void VisitStructDeclaration(StructDeclarationSyntax node)
+    {
+        var symbol = RegisterSymbol(node, NodeType.Struct) as INamedTypeSymbol;
+        RegisterBaseTypes(symbol);
+        base.VisitStructDeclaration(node);
+    }
+
+    public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
+    {
+        var symbol = RegisterSymbol(node, NodeType.Interface) as INamedTypeSymbol;
+        RegisterBaseTypes(symbol);
+        base.VisitInterfaceDeclaration(node);
+    }
+
+    public override void VisitRecordDeclaration(RecordDeclarationSyntax node)
+    {
+        var symbol = RegisterSymbol(node, NodeType.Record) as INamedTypeSymbol;
+        RegisterBaseTypes(symbol);
+        base.VisitRecordDeclaration(node);
+    }
+
+    public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Enum);
+        base.VisitEnumDeclaration(node);
+    }
+
+    // Type Names
+    public override void VisitIdentifierName(IdentifierNameSyntax node) => RegisterTypeReference(node);
+    public override void VisitQualifiedName(QualifiedNameSyntax node) => RegisterTypeReference(node);
+    public override void VisitGenericName(GenericNameSyntax node) => RegisterTypeReference(node);
+    public override void VisitPredefinedType(PredefinedTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitArrayType(ArrayTypeSyntax node) => RegisterTypeReference(node); // Failed=6/49
+    public override void VisitPointerType(PointerTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitNullableType(NullableTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitTupleType(TupleTypeSyntax node) => RegisterTypeReference(node);
+    public override void VisitAliasQualifiedName(AliasQualifiedNameSyntax node) => RegisterTypeReference(node);
+
+    // Function Declarations
+    public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Method);
+        base.VisitMethodDeclaration(node);
+    }
+
+    public override void VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
+    {
+        RegisterSymbol(node, NodeType.LocalFunction);
+        base.VisitLocalFunctionStatement(node);
+    }
+
+    public override void VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Constructor);
+        base.VisitConstructorDeclaration(node);
+    }
+
+    public override void VisitDestructorDeclaration(DestructorDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Destructor);
+        base.VisitDestructorDeclaration(node);
+    }
+
+    public override void VisitOperatorDeclaration(OperatorDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.Operator);
+        base.VisitOperatorDeclaration(node);
+    }
+
+    public override void VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
+    {
+        RegisterSymbol(node, NodeType.ConversionOperator);
+        base.VisitConversionOperatorDeclaration(node);
+    }
+
+    // Directives
+    public override void VisitUsingDirective(UsingDirectiveSyntax node) //  Failed=1404/1404
+    {
+        RegisterSymbol(node.Name, NodeType.Using);
+        base.VisitUsingDirective(node);
+    }
+
+    public override void VisitExternAliasDirective(ExternAliasDirectiveSyntax node)
+    {
+        // No symbol resolution for alias name
+        base.VisitExternAliasDirective(node);
+    }
+
+    public override void VisitReferenceDirectiveTrivia(ReferenceDirectiveTriviaSyntax node)
+    {
+        // Reference directives are typically handled in metadata, not symbol model
+        base.VisitReferenceDirectiveTrivia(node);
+    }
+
+    // Expressions
+    public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+    {
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
+        var caller = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+        if (symbol != null && caller != null)
         {
-            _semanticModel = semanticModel;
-            _codeAnalysisResult = codeAnalysisResult;
+            _result.RegisterEdge(caller, symbol, EdgeType.Calls);
+        }
+        base.VisitInvocationExpression(node);
+    }
+
+    public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node) // Failed=7707/7707
+    {
+        var fullExpression = node.ToString();               // e.g. Console.WriteLine
+        var left = node.Expression.ToString();              // e.g. Console
+        var right = node.Name.Identifier.Text;              // e.g. WriteLine
+        // e.g fileInfo.Exists()
+        Console.WriteLine($"Member Access: {fullExpression}");
+        Console.WriteLine($"  - Object/Type: {left}");
+        Console.WriteLine($"  - Member: {right}");
+
+        RegisterSymbol(node, NodeType.MemberAccess);
+        base.VisitMemberAccessExpression(node);
+    }
+
+    public override void VisitElementAccessExpression(ElementAccessExpressionSyntax node) // Failed=624/624
+    {
+        // ElementAccessExpressionSyntax, which represents array or indexer access like:
+        Console.WriteLine($"Element Access: {node}");
+        Console.WriteLine($"  - Target: {node.Expression}");
+
+        foreach (var arg in node.ArgumentList.Arguments)
+        {
+            Console.WriteLine($"  - Index/Argument: {arg.Expression}");
         }
 
-        public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
+        base.VisitElementAccessExpression(node);
+
+        RegisterSymbol(node, NodeType.ElementAccess);
+        base.VisitElementAccessExpression(node);
+    }
+
+    public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
+    {
+        base.VisitConditionalAccessExpression(node);
+    }
+
+    // Attributes
+    public override void VisitAttribute(AttributeSyntax node) // Failed=825/825
+    {
+        RegisterSymbol(node, NodeType.Attribute);
+        base.VisitAttribute(node);
+    }
+
+    public override void VisitAttributeList(AttributeListSyntax node) 
+    {
+        base.VisitAttributeList(node);
+    }
+
+    // Type Parameters & Constraints
+    public override void VisitTypeParameterConstraintClause(TypeParameterConstraintClauseSyntax node)
+    {
+        base.VisitTypeParameterConstraintClause(node);
+    }
+
+    public override void VisitTypeParameter(TypeParameterSyntax node)
+    {
+        RegisterSymbol(node, NodeType.TypeParameter);
+        base.VisitTypeParameter(node);
+    }
+
+    // Helper Methods
+    private ISymbol? RegisterSymbol(SyntaxNode node,
+                                    NodeType type,
+                                    [CallerFilePath] string sourceFile = "",
+                                    [CallerMemberName] string method = "",
+                                    [CallerLineNumber] int lineNumber = 0)
+    {
+        bool success = false;
+        var symbol = _semanticModel.GetDeclaredSymbol(node);
+        if (symbol != null)
         {
-            bool success = false;
+            _result.RegisterNode(symbol, symbol.ContainingSymbol, type, node);
+            success = true;
+        }
 
-            base.VisitNamespaceDeclaration(node);
+        _result.RegisterResult(node, success, sourceFile, method, lineNumber); 
+        return symbol;
+    }
 
-            ISymbol? namespaceSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (namespaceSymbol != null)
+    private void RegisterTypeReference(TypeSyntax node,
+                                    [CallerFilePath] string sourceFile = "",
+                                    [CallerMemberName] string method = "",
+                                    [CallerLineNumber] int lineNumber = 0)
+    {
+        bool success = false;
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+        if (symbol != null)
+        {
+            var context = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+            if (context != null)
             {
-                _codeAnalysisResult.RegisterNode(namespaceSymbol, null, NodeType.Namespace, node);
+                _result.RegisterEdge(context, symbol, EdgeType.TypeUsage);
                 success = true;
             }
-
-            _codeAnalysisResult.RegisterResult(node, success); // OK:  Failed=0/275
         }
+        _result.RegisterResult(node, success, sourceFile, method, lineNumber);
+    }
 
-        public override void VisitClassDeclaration(ClassDeclarationSyntax node)
-        {
-            bool success = false;
+    private void RegisterBaseTypes(INamedTypeSymbol? symbol)
+    {
+        if (symbol == null) return;
 
-            base.VisitClassDeclaration(node);
+        if (symbol.BaseType != null && symbol.BaseType.SpecialType != SpecialType.System_Object)
+            _result.RegisterEdge(symbol, symbol.BaseType, EdgeType.InheritsFrom);
 
-            INamedTypeSymbol? classSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (classSymbol != null)
-            {
-                _codeAnalysisResult.RegisterNode(classSymbol, null, NodeType.Class, node);
-                success = true;
-
-                if (classSymbol.BaseType != null && classSymbol.BaseType.SpecialType != SpecialType.System_Object)
-                {
-                    INamedTypeSymbol? baseClassSymbol = classSymbol.BaseType;
-                    _codeAnalysisResult.RegisterEdge(classSymbol, baseClassSymbol, EdgeType.Inheritance);
-                }
-
-                foreach (INamedTypeSymbol interfaceType in classSymbol.Interfaces)
-                {
-                    _codeAnalysisResult.RegisterEdge(classSymbol, interfaceType, EdgeType.Implements);
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // OK:  Failed=0/233
-        }
-
-        public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
-        {
-            bool success = false;
-
-            base.VisitInterfaceDeclaration(node);
-
-            INamedTypeSymbol? interfaceSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (interfaceSymbol != null)
-            {
-                _codeAnalysisResult.RegisterNode(interfaceSymbol, null, NodeType.Interface, node);
-                success = true;
-
-                foreach (INamedTypeSymbol interfaceType in interfaceSymbol.Interfaces)
-                {
-                    _codeAnalysisResult.RegisterEdge(interfaceSymbol, interfaceType, EdgeType.Implements);
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // OK Failed=0/52
-        }
-
-        public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
-        {
-            bool success = false;
-
-            base.VisitMethodDeclaration(node);
-
-            IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (methodSymbol != null)
-            {
-                INamedTypeSymbol containingType = methodSymbol.ContainingType;
-                int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
-                _codeAnalysisResult.RegisterNode(methodSymbol, containingType, NodeType.Method, node, cyclomaticComplexity);
-                success = true;
-
-                if (!IsVoid(methodSymbol.ReturnType))
-                {
-                    _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.ReturnType, EdgeType.Returns);
-                }
-
-                foreach (IParameterSymbol parameter in methodSymbol.Parameters)
-                {
-                    _codeAnalysisResult.RegisterEdge(methodSymbol, parameter.Type, EdgeType.Parameter);
-                }
-
-                if (methodSymbol.IsOverride && methodSymbol.OverriddenMethod != null)
-                {
-                    _codeAnalysisResult.RegisterEdge(methodSymbol, methodSymbol.OverriddenMethod, EdgeType.Overrride);
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // OK: Failed=0/1202
-        }
-
-
-        public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
-        {
-            bool success = false;
-
-            base.VisitPropertyDeclaration(node);
-
-            IPropertySymbol? propertySymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (propertySymbol != null)
-            {
-                INamedTypeSymbol containingType = propertySymbol.ContainingType;
-                _codeAnalysisResult.RegisterNode(propertySymbol, containingType, NodeType.Property, node);
-                success = true;
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // OK: Failed=0/517
-        }
-
-        public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
-        {
-            int variableCount = node.Declaration.Variables.Count;
-            int successCount = 0;
-
-            base.VisitFieldDeclaration(node);
-
-            // Loop over all variables (multiple variables can be declared in one FieldDeclaration) e.g. 'private int x, y;'
-            foreach (VariableDeclaratorSyntax variableNode in node.Declaration.Variables)
-            {
-                IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
-                if (fieldSymbol != null)
-                {
-                    INamedTypeSymbol containingType = fieldSymbol.ContainingType;
-                    _codeAnalysisResult.RegisterNode(fieldSymbol, containingType, NodeType.Field, node);
-                    successCount++;
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, variableCount == successCount); // OK: Failed=0/59
-        }
-
-        public override void VisitEventFieldDeclaration(EventFieldDeclarationSyntax node)
-        {
-            int variableCount = node.Declaration.Variables.Count;
-            int successCount = 0;
-
-            base.VisitEventFieldDeclaration(node);
-
-            foreach (VariableDeclaratorSyntax eventField in node.Declaration.Variables)
-            {
-                IEventSymbol? eventFieldSymbol = _semanticModel.GetDeclaredSymbol(eventField) as IEventSymbol;
-
-                if (eventFieldSymbol != null)
-                {
-                    INamedTypeSymbol containingType = eventFieldSymbol.ContainingType;
-                    _codeAnalysisResult.RegisterNode(eventFieldSymbol, containingType, NodeType.Event, node);
-                    successCount++;
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, variableCount == successCount); // OK: Failed=0/32
-        }
-
-        public override void VisitEventDeclaration(EventDeclarationSyntax node)
-        {
-            bool success = false;
-
-            base.VisitEventDeclaration(node);
-
-            IEventSymbol? eventSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (eventSymbol != null)
-            {
-                INamedTypeSymbol containingType = eventSymbol.ContainingType;
-                _codeAnalysisResult.RegisterNode(eventSymbol, containingType, NodeType.Event, node);
-                success = true;
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // TODO: Implements smaple code to analyze
-        }
-
-        public override void VisitGenericName(GenericNameSyntax node)
-        {
-            bool success = false;
-
-            base.VisitGenericName(node);
-
-            // Get the symbol information for the generic type  
-            var symbolInfo = _semanticModel.GetSymbolInfo(node);
-            var symbol = symbolInfo.Symbol;
-
-            if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.IsGenericType)
-            {
-                Logger.LogInfo($"Generic Type: {namedTypeSymbol.Name}"); // TODO: Implement Line = 168 Count = 64
-
-                // Analyze type arguments  
-                foreach (var typeArgument in namedTypeSymbol.TypeArguments)
-                {
-                    Logger.LogInfo($"Type Argument: {typeArgument.Name}"); // TODDO: Implement Line=173 Count=759
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // TOD0: Failed=645/645
-        }
-
-        public override void VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
-        {
-            bool success = false;
-
-            base.VisitObjectCreationExpression(node);
-
-            // Get the type being instantiated  
-            var typeInfo = _semanticModel.GetTypeInfo(node);
-            var namedTypeSymbol = typeInfo.Type as INamedTypeSymbol;
-
-            if (namedTypeSymbol != null && namedTypeSymbol.IsGenericType)
-            {
-                Logger.LogInfo($"Instantiated Generic Type: {namedTypeSymbol.Name}");
-
-                // Analyze type arguments  
-                foreach (var typeArgument in namedTypeSymbol.TypeArguments)
-                {
-                    Logger.LogInfo($"Type Argument: {typeArgument.Name}");
-                }
-            }
-            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=525/525
-
-        }
-
-        public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
-        {
-            bool success = false;
-            int enumValueCount = node.Members.Count;
-            int successCount = 0;
-
-            base.VisitEnumDeclaration(node);
-
-            INamedTypeSymbol? enumSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (enumSymbol != null)
-            {
-                INamedTypeSymbol containingType = enumSymbol.ContainingType;
-                _codeAnalysisResult.RegisterNode(enumSymbol, containingType, NodeType.Enum, node);
-                success = true;
-
-                foreach (EnumMemberDeclarationSyntax enumMemberNode in node.Members)
-                {
-                    IFieldSymbol? enumValueSymbol = _semanticModel.GetDeclaredSymbol(enumMemberNode);
-
-                    if (enumValueSymbol != null)
-                    {
-                        _codeAnalysisResult.RegisterNode(enumValueSymbol, enumSymbol, NodeType.EnumValue, node);
-                        successCount++;
-                    }
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success && enumValueCount == successCount); // OK: Failed=0/16
-        }
-
-        public override void VisitStructDeclaration(StructDeclarationSyntax node)
-        {
-            bool success = false;
-
-            base.VisitStructDeclaration(node);
-
-            INamedTypeSymbol? structSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (structSymbol != null)
-            {
-                _codeAnalysisResult.RegisterNode(structSymbol, null, NodeType.Struct, node);
-                success = true;
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // OK:  Failed=0/1
-        }
-
-
-        public override void VisitVariableDeclarator(VariableDeclaratorSyntax node)
-        {
-            bool success = false;
-
-            base.VisitVariableDeclarator(node);
-
-            ISymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(node);
-            if (variableSymbol != null)
-            {
-                INamedTypeSymbol containingType = variableSymbol.ContainingType;
-                _codeAnalysisResult.RegisterNode(variableSymbol, containingType, NodeType.Variable, node);
-                success = true;
-            }
-            else
-            {
-                // Temp
-                var s = _semanticModel.GetDeclaredSymbol(node);
-                if (s != null)
-                {
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=622/2149
-        }
-
-        public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
-        {
-            bool success = false;
-
-            base.VisitAssignmentExpression(node);
-
-            IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
-            ISymbol? eventHandlerSymbol = _semanticModel.GetSymbolInfo(node.Right).Symbol;
-            if (eventSymbol != null)
-            {
-                if (eventHandlerSymbol != null)
-                {
-                    if (node.IsKind(SyntaxKind.AddAssignmentExpression))
-                    {
-                        _codeAnalysisResult.RegisterEdge(eventHandlerSymbol, eventSymbol, EdgeType.Subscribes);
-                        success = true;
-                    }
-                    else if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
-                    {
-                        _codeAnalysisResult.RegisterEdge(eventHandlerSymbol, eventSymbol, EdgeType.Unsubscribes);
-                        success = true;
-                    }
-                    else
-                    {
-
-                    }
-                }
-                else
-                {
-
-                }
-            }
-            else
-            {
-                success = true; // Assignement not relevant
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=19/1169
-        }
-
-        public override void VisitInvocationExpression(InvocationExpressionSyntax node)
-        {
-            bool success = false;
-
-            base.VisitInvocationExpression(node);
-
-            IMethodSymbol? calledMethodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
-            if (calledMethodSymbol != null)
-            {
-                IMethodSymbol? callingMethodSymbol = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
-
-                if (callingMethodSymbol != null)
-                {
-                    if (calledMethodSymbol.MethodKind == MethodKind.DelegateInvoke)
-                    {
-                        IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Expression).Symbol as IEventSymbol;
-                        if (eventSymbol != null)
-                        {
-                            _codeAnalysisResult.RegisterEdge(callingMethodSymbol, eventSymbol, EdgeType.Triggers);
-                            success = true;
-                        }
-                    }
-                    else
-                    {
-                        _codeAnalysisResult.RegisterEdge(callingMethodSymbol, calledMethodSymbol, EdgeType.Call);
-                        success = true;
-                    }
-                }
-                else
-                {
-                    var s = _semanticModel.GetEnclosingSymbol(node.SpanStart);
-                    if (s != null) { }
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=55/4780
-        }
-
-        public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node)
-        {
-            //var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
-            //if (symbol != null && _membersToTrack.Contains(symbol))
-            //{
-            //    Console.WriteLine($"Member {symbol.Name} accessed at {node.GetLocation().GetLineSpan()}");
-            //}
-
-            base.VisitMemberAccessExpression(node);
-        }
-
-        public override void VisitIdentifierName(IdentifierNameSyntax node)
-        {
-            bool success = false;
-
-            base.VisitIdentifierName(node);
-
-            ISymbol? IdentifierNameSymbol = _semanticModel.GetSymbolInfo(node).Symbol;
-
-            if (IdentifierNameSymbol != null)
-            {
-                IMethodSymbol callingMethodSymbol = _semanticModel.GetEnclosingSymbol(node.SpanStart) as IMethodSymbol;
-                if (callingMethodSymbol != null)
-                {
-                    if (callingMethodSymbol is ILocalSymbol)
-                    {
-                        _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.VariableUsage);
-
-                    }
-                    else if (callingMethodSymbol is IParameterSymbol)
-                    {
-                        _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.ParameterUsage);
-                        success = true;
-                    }
-                    else if (callingMethodSymbol is IFieldSymbol)
-                    {
-                        _codeAnalysisResult.RegisterEdge(callingMethodSymbol, IdentifierNameSymbol, EdgeType.FieldUsage);
-                        success = true;
-                    }
-                    else
-                    {
-
-                    }
-                }
-                else
-                {
-                    ISymbol symbol = _semanticModel.GetEnclosingSymbol(node.SpanStart);
-                    if (symbol.IsImplicitlyDeclared)
-                    {
-                        success = true;
-                    }
-                    else
-                    {
-
-                    }
-                }
-            }
-
-            _codeAnalysisResult.RegisterResult(node, success); // TODO: Failed=25837/32693
-        }
-
-        private int CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
-        {
-            int cyclomaticComplexity = 1;
-
-            var cfg = ControlFlowGraph.Create(node, _semanticModel);
-            if (cfg != null)
-            {
-                int nodes = cfg.Blocks.Length;
-                int edges = 0;
-
-                foreach (var block in cfg.Blocks)
-                {
-                    if (block.ConditionalSuccessor?.Destination != null)
-                        edges++;
-
-                    if (block.FallThroughSuccessor?.Destination != null)
-                        edges++;
-                }
-
-                int p = 1; // assume 1 connected component for a method
-                cyclomaticComplexity = edges - nodes + (2 * p);
-            }
-
-
-            return cyclomaticComplexity;
-        }
-
-        private bool IsVoid(ITypeSymbol typeSymbol)
-        {
-            return typeSymbol.SpecialType == SpecialType.System_Void;
-        }
+        foreach (var iface in symbol.Interfaces)
+            _result.RegisterEdge(symbol, iface, EdgeType.Implements);
     }
 }

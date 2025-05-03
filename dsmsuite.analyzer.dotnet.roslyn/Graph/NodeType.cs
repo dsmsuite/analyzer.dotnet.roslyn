@@ -6,12 +6,26 @@
         Class,
         Interface,
         Struct,
+        Record,
         Enum,
         EnumValue,
         Method,
         Variable,
         Property,
         Field,
-        Event
+        Event,
+        Using,
+        TypeParameter,
+        Operator,
+        LocalFunction,
+        ElementAccess,
+        Destructor,
+        ConversionOperator,
+        Attribute,
+        MemberAccess,
+        Constructor,
+
+
+
     }
 }
