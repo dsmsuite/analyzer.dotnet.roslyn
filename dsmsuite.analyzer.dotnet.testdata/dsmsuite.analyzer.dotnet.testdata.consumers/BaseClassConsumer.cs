@@ -1,41 +1,25 @@
-#pragma once
-
-#include <list>
-
-class BaseClassConsumer
+namespace dsmsuite.analyzer.dotnet.testdata.providers
 {
-public:
-	BaseClassConsumer();
-	~BaseClassConsumer();
+    class BaseClassConsumer
+    {
+        public void MethodCallingInterfaceMethody()
+        {
+            IProviderInterface provider = new ProviderBaseClass1();
+            provider.InterfaceMethod();
+        }
 
-	void MethodCallingAbstractFunctionsInClassHierarchy();
-	void MethodCallingConcreteFunctionsInClassHierarchy();
-};
+        public void MethodCallingAbstractFunctionsInClassHierarchy()
+        {
+            ProviderAbstractClass provider = new ProviderBaseClass1();
+            provider.AbstractBaseMethod();
+        }
 
-#include "BaseClassConsumer.h"
-
-#include "../Providers/ProviderAbstractClass.h"
-#include "../Providers/ProviderBaseClass1.h"
-
-BaseClassConsumer::BaseClassConsumer()
-{
+        public void MethodCallingConcreteFunctionsInClassHierarchy()
+        {
+            ProviderBaseClass1 provider = new ProviderBaseClass1();
+            provider.InterfaceMethod();
+            provider.AbstractBaseMethod();
+            provider.ConcreteBaseMethod();
+        }
+    };
 }
-
-BaseClassConsumer::~BaseClassConsumer()
-{
-}
-
-void  BaseClassConsumer::MethodCallingAbstractFunctionsInClassHierarchy()
-{
-	ProviderAbstractClass* pAbstractClass = new ProviderBaseClass1();
-	pAbstractClass->AbstractBaseMethod();
-}
-
-void  BaseClassConsumer::MethodCallingConcreteFunctionsInClassHierarchy()
-{
-	ProviderBaseClass1* pBaseClass1 = new ProviderBaseClass1();
-	pBaseClass1->AbstractBaseMethod();
-	pBaseClass1->ConcreteBaseMethod();
-}
-
-

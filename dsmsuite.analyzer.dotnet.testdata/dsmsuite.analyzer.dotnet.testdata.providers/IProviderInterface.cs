@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace dsmsuite.analyzer.dotnet.testdata.providers
 {
-    public interface ProviderInterface
+    public class ProviderEventArgs
     {
+        public string Name { get; set; }
+    }
+
+    public interface IProviderInterface
+    {
+        event EventHandler<ProviderEventArgs> ProviderChanged;
         void InterfaceMethod();
     }
 }

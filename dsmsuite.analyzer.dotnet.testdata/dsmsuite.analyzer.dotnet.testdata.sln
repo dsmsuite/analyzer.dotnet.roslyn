@@ -5,6 +5,8 @@ VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsmsuite.analyzer.dotnet.testdata.providers", "dsmsuite.analyzer.dotnet.testdata.providers\dsmsuite.analyzer.dotnet.testdata.providers.csproj", "{3FF7364B-5C94-4CA8-8B8A-465E1FE82F76}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsmsuite.analyzer.dotnet.testdata.consumers", "dsmsuite.analyzer.dotnet.testdata.consumers\dsmsuite.analyzer.dotnet.testdata.consumers.csproj", "{24DA4E55-FA17-4184-ABDD-B9D40ED51CE6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{3FF7364B-5C94-4CA8-8B8A-465E1FE82F76}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FF7364B-5C94-4CA8-8B8A-465E1FE82F76}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FF7364B-5C94-4CA8-8B8A-465E1FE82F76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24DA4E55-FA17-4184-ABDD-B9D40ED51CE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24DA4E55-FA17-4184-ABDD-B9D40ED51CE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24DA4E55-FA17-4184-ABDD-B9D40ED51CE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24DA4E55-FA17-4184-ABDD-B9D40ED51CE6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

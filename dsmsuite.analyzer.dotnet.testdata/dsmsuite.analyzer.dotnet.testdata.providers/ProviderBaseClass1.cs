@@ -1,7 +1,9 @@
+using System;
+
 namespace dsmsuite.analyzer.dotnet.testdata.providers
 {
 
-    class ProviderBaseClass1 : ProviderAbstractClass, ProviderInterface
+    public class ProviderBaseClass1 : ProviderAbstractClass, IProviderInterface
     {
         public ProviderBaseClass1() { }
         ~ProviderBaseClass1() { }
@@ -10,5 +12,4 @@ namespace dsmsuite.analyzer.dotnet.testdata.providers
         public override void AbstractBaseMethod() { } // Implements AbstractClass abstract method
         public virtual void ConcreteBaseMethod() { } // Overrides BaseClass2 method implementation
     };
-
 }

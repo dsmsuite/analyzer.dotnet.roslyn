@@ -1,17 +1,17 @@
 namespace dsmsuite.analyzer.dotnet.testdata.providers
 {
 
-    class ProviderClassParameter1
+    public class ProviderClassParameter1
     {
     };
 
-    class ProviderClassParameter2
+    public class ProviderClassParameter2
     {
     };
 
-    class ProviderClass
+    public class ProviderClass
     {
-        class NestedClass
+        public class NestedClass
         {
             public NestedClass(ProviderClass provider) { }
             ~NestedClass() { }

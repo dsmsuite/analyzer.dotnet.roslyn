@@ -1,6 +1,6 @@
 namespace dsmsuite.analyzer.dotnet.testdata.providers
 {
-    enum ProviderEnum
+    public enum ProviderEnum
     {
         enum_val1,
         enum_val2,

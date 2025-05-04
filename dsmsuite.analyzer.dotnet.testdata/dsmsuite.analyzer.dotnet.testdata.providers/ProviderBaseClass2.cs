@@ -1,7 +1,7 @@
 namespace dsmsuite.analyzer.dotnet.testdata.providers
 {
 
-class ProviderBaseClass2 : ProviderBaseClass4
+public class ProviderBaseClass2 : ProviderBaseClass4
 {
 	public ProviderBaseClass2() { }
     ~ProviderBaseClass2() { }

@@ -1,102 +1,64 @@
-#pragma once
-
-#include <list>
-
-#include "../Providers/ProviderGenericClass.h"
-#include "../Providers/ProviderClass.h"
-#include "../Providers/ProviderStruct.h"
-#include "../Providers/ProviderUnion.h"
-#include "../Providers/ProviderEnum.h"
-
-class ParameterConsumer
+namespace dsmsuite.analyzer.dotnet.testdata.providers
 {
-public:
-	ParameterConsumer();
-	~ParameterConsumer();
 
-	void MethodWithIntParameter(int intParameter);
-	void MethodWithEnumParameter(ProviderEnum enumParameter);
-	void MethodWithUnionParameter(ProviderUnion unionParameter);
-	void MethodWithStructParameter(ProviderStruct structParameter);
-	void MethodWithClassParameter(ProviderClass classParameter);
-	void MethodWithStdListParameter(std::list<ProviderStdListTemplateArgument> stdListParameter);
-	void MethodWithGenericClassParameter(ProviderGenericClass< ProviderTemplateArgument1, ProviderTemplateArgument2> genericClassParameter);
-};
+	class ParameterConsumer
+	{
+		public void MethodWithIntParameter(int intParameter) 
+		{
+            intParameter = 123;
+        }
 
+		public void MethodWithEnumParameter(ProviderEnum enumParameter) 
+		{
+            enumParameter = ProviderEnum.enum_val1;
+        }
+		
+		public void MethodWithStructParameter(ProviderStruct structParameter)
+		{
+            structParameter.member1 = 1;
+            structParameter.member2 = "test";
+        }
+		
+		public void MethodWithClassParameter(ProviderClass classParameter) 
+		{
+            classParameter.PublicMethodA();
+            classParameter.PublicMethodB();
+        }
 
-#include "ParameterConsumer.h"
+        public void MethodWithNullableClassParameter(ProviderClass? classParameter)
+        {
+            classParameter?.PublicMethodA();
+            classParameter?.PublicMethodB();
+        }
 
-#include <memory>
+        public void MethodWithStdListParameter(List<ProviderListTemplateArgument> listParameter) 
+		{
+            ProviderListTemplateArgument firstElement = listParameter.First<ProviderListTemplateArgument>();
+            firstElement.PublicMethodA();
+            firstElement.PublicMethodB();
 
-ParameterConsumer::ParameterConsumer()
-{
+            // Use implicit type
+            listParameter[0].PublicMethodC();
+            listParameter[0].PublicMethodD();
+        }
+		
+		public void MethodWithGenericClassParameter(ProviderGenericClass<ProviderTemplateArgument1, ProviderTemplateArgument2> genericClassParameter) 
+		{
+            // Use explicit type
+            ProviderTemplateArgument1? t = genericClassParameter.GetFirstTemplateArgument();
+            t?.PublicMethodA();
+            t?.PublicMethodB();
+
+            ProviderTemplateArgument2? u = genericClassParameter.GetSecondTemplateArgument();
+            u?.PublicMethodA();
+            u?.PublicMethodB();
+
+            // Use implicit type
+            genericClassParameter.GetFirstTemplateArgument()?.PublicMethodC();
+            genericClassParameter.GetFirstTemplateArgument()?.PublicMethodD();
+
+            genericClassParameter.GetSecondTemplateArgument()?.PublicMethodC();
+            genericClassParameter.GetSecondTemplateArgument()?.PublicMethodD();
+        }
+	};
 }
-
-ParameterConsumer::~ParameterConsumer()
-{
-
-}
-
-
-void ParameterConsumer::MethodWithIntParameter(int intParameter)
-{
-	intParameter = 123;
-}
-
-void ParameterConsumer::MethodWithEnumParameter(ProviderEnum enumParameter) 
-{
-	enumParameter = ProviderEnum::enum_val1;
-}
-
-void ParameterConsumer::MethodWithUnionParameter(ProviderUnion unionParameter)
-{
-	unionParameter.member1 = 1;
-	unionParameter.member2 = 2.2;
-}
-
-void ParameterConsumer::MethodWithStructParameter(ProviderStruct structParameter)
-{
-	structParameter.member1 = 1;
-	structParameter.member2 = "test";
-}
-
-void ParameterConsumer::MethodWithClassParameter(ProviderClass classParameter)
-{
-	classParameter.PublicMethodA();
-	classParameter.PublicMethodB();
-}
-
-void ParameterConsumer::MethodWithStdListParameter(std::list<ProviderStdListTemplateArgument> stdListParameter)
-{
-	// Use explicit type
-	ProviderStdListTemplateArgument firstElement = stdListParameter.front();
-	firstElement.PublicMethodA();
-	firstElement.PublicMethodB();
-
-	// Use implicit type
-	stdListParameter.front().PublicMethodC();
-	stdListParameter.front().PublicMethodD();
-}
-
-void ParameterConsumer::MethodWithGenericClassParameter(ProviderGenericClass< ProviderTemplateArgument1, ProviderTemplateArgument2> genericClassParameter)
-{
-	// Use explicit type
-	ProviderTemplateArgument1* t = genericClassParameter.GetFirstTemplateArgument();
-	t->PublicMethodA();
-	t->PublicMethodB();
-
-	ProviderTemplateArgument2* u = genericClassParameter.GetSecondTemplateArgument();
-	u->PublicMethodA();
-	u->PublicMethodB();
-
-	// Use implicit type
-	genericClassParameter.GetFirstTemplateArgument()->PublicMethodC();
-	genericClassParameter.GetFirstTemplateArgument()->PublicMethodD();
-
-	genericClassParameter.GetSecondTemplateArgument()->PublicMethodC();
-	genericClassParameter.GetSecondTemplateArgument()->PublicMethodD();
-}
-
-
-
-

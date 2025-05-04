@@ -1,6 +1,6 @@
 namespace dsmsuite.analyzer.dotnet.testdata.providers
 {
-	struct ProviderStruct
+	public struct ProviderStruct
 	{
 		public ProviderStruct()
 		{
@@ -14,7 +14,7 @@ namespace dsmsuite.analyzer.dotnet.testdata.providers
 			member2 = val2;
 		}
 
-		int member1;
-		string member2;
+		public int member1;
+		public string member2;
 	};
 }
