@@ -20,239 +20,280 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         _result = result;
     }
 
-    // Namespace Declarations
+    //Visit namespaces
     public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
     {
-        RegisterSymbol(node, NodeType.Namespace);
+        INamespaceSymbol? namespaceSymbol = _semanticModel.GetDeclaredSymbol(node);
+
+        do
+        {
+            if (namespaceSymbol != null)
+            {
+                if (!namespaceSymbol.IsGlobalNamespace)
+                {
+                    RegisterSymbol(namespaceSymbol, namespaceSymbol.ContainingNamespace, node, NodeType.Namespace);
+                }
+                namespaceSymbol = namespaceSymbol.ContainingNamespace;
+            }
+        } while (namespaceSymbol != null);
+
         base.VisitNamespaceDeclaration(node);
     }
 
-    public override void VisitFileScopedNamespaceDeclaration(FileScopedNamespaceDeclarationSyntax node)
-    {
-        RegisterSymbol(node, NodeType.Namespace);
-        base.VisitFileScopedNamespaceDeclaration(node);
-    }
+    /// <summary>
+    /// ileScopedNamespaceDeclarationSyntax is a type introduced in C# 10 that represents file-scoped namespaces in the Roslyn syntax model. 
+    /// File-scoped namespaces are a new syntax feature that simplifies namespace declarations by allowing you to declare
+    /// a namespace for an entire file without using nested braces.
+    /// </summary>
+    /// TODO: Implement
+    //public override void VisitFileScopedNamespaceDeclaration(FileScopedNamespaceDeclarationSyntax node)
+    //{
+    //    RegisterSymbol(node, NodeType.Namespace);
+    //    base.VisitFileScopedNamespaceDeclaration(node);
+    //}
 
-    // Type Declarations
+    //// Type Declarations
     public override void VisitClassDeclaration(ClassDeclarationSyntax node)
     {
-        var symbol = RegisterSymbol(node, NodeType.Class) as INamedTypeSymbol;
-        RegisterBaseTypes(symbol);
+        INamedTypeSymbol? classSymbol = _semanticModel.GetDeclaredSymbol(node);
+        INamespaceSymbol? parentSymbol = classSymbol?.ContainingNamespace;
+        RegisterSymbol(classSymbol, parentSymbol, node, NodeType.Class);
+
         base.VisitClassDeclaration(node);
     }
 
     public override void VisitStructDeclaration(StructDeclarationSyntax node)
     {
-        var symbol = RegisterSymbol(node, NodeType.Struct) as INamedTypeSymbol;
-        RegisterBaseTypes(symbol);
+        INamedTypeSymbol? structSymbol = _semanticModel.GetDeclaredSymbol(node);
+        INamespaceSymbol? parentSymbol = structSymbol?.ContainingNamespace;
+        RegisterSymbol(structSymbol, parentSymbol, node, NodeType.Struct);
+
         base.VisitStructDeclaration(node);
     }
 
     public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
     {
-        var symbol = RegisterSymbol(node, NodeType.Interface) as INamedTypeSymbol;
-        RegisterBaseTypes(symbol);
-        base.VisitInterfaceDeclaration(node);
-    }
+        INamedTypeSymbol? interfaceSymbol = _semanticModel.GetDeclaredSymbol(node);
+        INamespaceSymbol? parentSymbol = interfaceSymbol?.ContainingNamespace;
+        RegisterSymbol(interfaceSymbol, parentSymbol, node, NodeType.Interface);
 
-    public override void VisitRecordDeclaration(RecordDeclarationSyntax node)
-    {
-        var symbol = RegisterSymbol(node, NodeType.Record) as INamedTypeSymbol;
-        RegisterBaseTypes(symbol);
-        base.VisitRecordDeclaration(node);
+        base.VisitInterfaceDeclaration(node);
     }
 
     public override void VisitEnumDeclaration(EnumDeclarationSyntax node)
     {
-        RegisterSymbol(node, NodeType.Enum);
+        INamedTypeSymbol? enumSymbol = _semanticModel.GetDeclaredSymbol(node);
+        INamespaceSymbol? parentSymbol = enumSymbol?.ContainingNamespace;
+        RegisterSymbol(enumSymbol, parentSymbol, node, NodeType.Enum);
+
         base.VisitEnumDeclaration(node);
     }
 
-    // Type Names
-    public override void VisitIdentifierName(IdentifierNameSyntax node) => RegisterTypeReference(node);
-    public override void VisitQualifiedName(QualifiedNameSyntax node) => RegisterTypeReference(node);
-    public override void VisitGenericName(GenericNameSyntax node) => RegisterTypeReference(node);
-    public override void VisitPredefinedType(PredefinedTypeSyntax node) => RegisterTypeReference(node);
-    public override void VisitArrayType(ArrayTypeSyntax node) => RegisterTypeReference(node); // Failed=6/49
-    public override void VisitPointerType(PointerTypeSyntax node) => RegisterTypeReference(node);
-    public override void VisitNullableType(NullableTypeSyntax node) => RegisterTypeReference(node);
-    public override void VisitTupleType(TupleTypeSyntax node) => RegisterTypeReference(node);
-    public override void VisitAliasQualifiedName(AliasQualifiedNameSyntax node) => RegisterTypeReference(node);
+    /// <summary>
+    /// RecordDeclarationSyntax is a type in the Roslyn syntax model that represents the syntax of a record declaration in C#. 
+    /// Records are a feature introduced in C# 9 that provide a concise way to define immutable data types with built-in 
+    /// functionality for value equality, and they can be thought of as lightweight classes primarily used for storing data.
+    /// </summary>
+    /// TODO: Implement 
+    //public override void VisitRecordDeclaration(RecordDeclarationSyntax node)
+    //{
+    //    var symbol = RegisterSymbol(node, NodeType.Record) as INamedTypeSymbol;
+    //    RegisterBaseTypes(symbol);
+    //    base.VisitRecordDeclaration(node);
+    //}
 
-    // Function Declarations
-    public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
-    {
-        RegisterSymbol(node, NodeType.Method);
-        base.VisitMethodDeclaration(node);
-    }
 
-    public override void VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
-    {
-        RegisterSymbol(node, NodeType.LocalFunction);
-        base.VisitLocalFunctionStatement(node);
-    }
 
-    public override void VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
-    {
-        RegisterSymbol(node, NodeType.Constructor);
-        base.VisitConstructorDeclaration(node);
-    }
+    //// Type Names
+    //public override void VisitIdentifierName(IdentifierNameSyntax node) => RegisterTypeReference(node);
+    //public override void VisitQualifiedName(QualifiedNameSyntax node) => RegisterTypeReference(node);
+    //public override void VisitGenericName(GenericNameSyntax node) => RegisterTypeReference(node);
+    //public override void VisitPredefinedType(PredefinedTypeSyntax node) => RegisterTypeReference(node);
+    //public override void VisitArrayType(ArrayTypeSyntax node) => RegisterTypeReference(node); // Failed=6/49
+    //public override void VisitPointerType(PointerTypeSyntax node) => RegisterTypeReference(node);
+    //public override void VisitNullableType(NullableTypeSyntax node) => RegisterTypeReference(node);
+    //public override void VisitTupleType(TupleTypeSyntax node) => RegisterTypeReference(node);
+    //public override void VisitAliasQualifiedName(AliasQualifiedNameSyntax node) => RegisterTypeReference(node);
 
-    public override void VisitDestructorDeclaration(DestructorDeclarationSyntax node)
-    {
-        RegisterSymbol(node, NodeType.Destructor);
-        base.VisitDestructorDeclaration(node);
-    }
+    //// Function Declarations
+    //public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+    //{
+    //    RegisterSymbol(node, NodeType.Method);
+    //    base.VisitMethodDeclaration(node);
+    //}
 
-    public override void VisitOperatorDeclaration(OperatorDeclarationSyntax node)
-    {
-        RegisterSymbol(node, NodeType.Operator);
-        base.VisitOperatorDeclaration(node);
-    }
+    //public override void VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
+    //{
+    //    RegisterSymbol(node, NodeType.LocalFunction);
+    //    base.VisitLocalFunctionStatement(node);
+    //}
 
-    public override void VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
-    {
-        RegisterSymbol(node, NodeType.ConversionOperator);
-        base.VisitConversionOperatorDeclaration(node);
-    }
+    //public override void VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+    //{
+    //    RegisterSymbol(node, NodeType.Constructor);
+    //    base.VisitConstructorDeclaration(node);
+    //}
 
-    // Directives
-    public override void VisitUsingDirective(UsingDirectiveSyntax node) //  Failed=1404/1404
-    {
-        RegisterSymbol(node.Name, NodeType.Using);
-        base.VisitUsingDirective(node);
-    }
+    //public override void VisitDestructorDeclaration(DestructorDeclarationSyntax node)
+    //{
+    //    RegisterSymbol(node, NodeType.Destructor);
+    //    base.VisitDestructorDeclaration(node);
+    //}
 
-    public override void VisitExternAliasDirective(ExternAliasDirectiveSyntax node)
-    {
-        // No symbol resolution for alias name
-        base.VisitExternAliasDirective(node);
-    }
+    //public override void VisitOperatorDeclaration(OperatorDeclarationSyntax node)
+    //{
+    //    RegisterSymbol(node, NodeType.Operator);
+    //    base.VisitOperatorDeclaration(node);
+    //}
 
-    public override void VisitReferenceDirectiveTrivia(ReferenceDirectiveTriviaSyntax node)
-    {
-        // Reference directives are typically handled in metadata, not symbol model
-        base.VisitReferenceDirectiveTrivia(node);
-    }
+    //public override void VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
+    //{
+    //    RegisterSymbol(node, NodeType.ConversionOperator);
+    //    base.VisitConversionOperatorDeclaration(node);
+    //}
 
-    // Expressions
-    public override void VisitInvocationExpression(InvocationExpressionSyntax node)
-    {
-        var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
-        var caller = _semanticModel.GetEnclosingSymbol(node.SpanStart);
-        if (symbol != null && caller != null)
-        {
-            _result.RegisterEdge(caller, symbol, EdgeType.Calls);
-        }
-        base.VisitInvocationExpression(node);
-    }
+    //// Directives
+    //public override void VisitUsingDirective(UsingDirectiveSyntax node) //  Failed=1404/1404
+    //{
+    //    RegisterSymbol(node.Name, NodeType.Using);
+    //    base.VisitUsingDirective(node);
+    //}
 
-    public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node) // Failed=7707/7707
-    {
-        var fullExpression = node.ToString();               // e.g. Console.WriteLine
-        var left = node.Expression.ToString();              // e.g. Console
-        var right = node.Name.Identifier.Text;              // e.g. WriteLine
-        // e.g fileInfo.Exists()
-        Console.WriteLine($"Member Access: {fullExpression}");
-        Console.WriteLine($"  - Object/Type: {left}");
-        Console.WriteLine($"  - Member: {right}");
+    //public override void VisitExternAliasDirective(ExternAliasDirectiveSyntax node)
+    //{
+    //    // No symbol resolution for alias name
+    //    base.VisitExternAliasDirective(node);
+    //}
 
-        RegisterSymbol(node, NodeType.MemberAccess);
-        base.VisitMemberAccessExpression(node);
-    }
+    //public override void VisitReferenceDirectiveTrivia(ReferenceDirectiveTriviaSyntax node)
+    //{
+    //    // Reference directives are typically handled in metadata, not symbol model
+    //    base.VisitReferenceDirectiveTrivia(node);
+    //}
 
-    public override void VisitElementAccessExpression(ElementAccessExpressionSyntax node) // Failed=624/624
-    {
-        // ElementAccessExpressionSyntax, which represents array or indexer access like:
-        Console.WriteLine($"Element Access: {node}");
-        Console.WriteLine($"  - Target: {node.Expression}");
+    //// Expressions
+    //public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+    //{
+    //    var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
+    //    var caller = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+    //    if (symbol != null && caller != null)
+    //    {
+    //        _result.RegisterEdge(caller, symbol, EdgeType.Calls);
+    //    }
+    //    base.VisitInvocationExpression(node);
+    //}
 
-        foreach (var arg in node.ArgumentList.Arguments)
-        {
-            Console.WriteLine($"  - Index/Argument: {arg.Expression}");
-        }
+    //public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node) // Failed=7707/7707
+    //{
+    //    var fullExpression = node.ToString();               // e.g. Console.WriteLine
+    //    var left = node.Expression.ToString();              // e.g. Console
+    //    var right = node.Name.Identifier.Text;              // e.g. WriteLine
+    //    // e.g fileInfo.Exists()
+    //    Console.WriteLine($"Member Access: {fullExpression}");
+    //    Console.WriteLine($"  - Object/Type: {left}");
+    //    Console.WriteLine($"  - Member: {right}");
 
-        base.VisitElementAccessExpression(node);
+    //    RegisterSymbol(node, NodeType.MemberAccess);
+    //    base.VisitMemberAccessExpression(node);
+    //}
 
-        RegisterSymbol(node, NodeType.ElementAccess);
-        base.VisitElementAccessExpression(node);
-    }
+    //public override void VisitElementAccessExpression(ElementAccessExpressionSyntax node) // Failed=624/624
+    //{
+    //    // ElementAccessExpressionSyntax, which represents array or indexer access like:
+    //    Console.WriteLine($"Element Access: {node}");
+    //    Console.WriteLine($"  - Target: {node.Expression}");
 
-    public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
-    {
-        base.VisitConditionalAccessExpression(node);
-    }
+    //    foreach (var arg in node.ArgumentList.Arguments)
+    //    {
+    //        Console.WriteLine($"  - Index/Argument: {arg.Expression}");
+    //    }
 
-    // Attributes
-    public override void VisitAttribute(AttributeSyntax node) // Failed=825/825
-    {
-        RegisterSymbol(node, NodeType.Attribute);
-        base.VisitAttribute(node);
-    }
+    //    base.VisitElementAccessExpression(node);
 
-    public override void VisitAttributeList(AttributeListSyntax node) 
-    {
-        base.VisitAttributeList(node);
-    }
+    //    RegisterSymbol(node, NodeType.ElementAccess);
+    //    base.VisitElementAccessExpression(node);
+    //}
 
-    // Type Parameters & Constraints
-    public override void VisitTypeParameterConstraintClause(TypeParameterConstraintClauseSyntax node)
-    {
-        base.VisitTypeParameterConstraintClause(node);
-    }
+    //public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
+    //{
+    //    base.VisitConditionalAccessExpression(node);
+    //}
 
-    public override void VisitTypeParameter(TypeParameterSyntax node)
-    {
-        RegisterSymbol(node, NodeType.TypeParameter);
-        base.VisitTypeParameter(node);
-    }
+    //// Attributes
+    //public override void VisitAttribute(AttributeSyntax node) // Failed=825/825
+    //{
+    //    RegisterSymbol(node, NodeType.Attribute);
+    //    base.VisitAttribute(node);
+    //}
 
-    // Helper Methods
-    private ISymbol? RegisterSymbol(SyntaxNode node,
+    //public override void VisitAttributeList(AttributeListSyntax node) 
+    //{
+    //    base.VisitAttributeList(node);
+    //}
+
+    //// Type Parameters & Constraints
+    //public override void VisitTypeParameterConstraintClause(TypeParameterConstraintClauseSyntax node)
+    //{
+    //    base.VisitTypeParameterConstraintClause(node);
+    //}
+
+    //public override void VisitTypeParameter(TypeParameterSyntax node)
+    //{
+    //    RegisterSymbol(node, NodeType.TypeParameter);
+    //    base.VisitTypeParameter(node);
+    //}
+
+    //// Helper Methods
+    private ISymbol? RegisterSymbol(ISymbol? symbol,
+                                    ISymbol? parent,
+                                    SyntaxNode node,
                                     NodeType type,
                                     [CallerFilePath] string sourceFile = "",
                                     [CallerMemberName] string method = "",
                                     [CallerLineNumber] int lineNumber = 0)
     {
         bool success = false;
-        var symbol = _semanticModel.GetDeclaredSymbol(node);
+
         if (symbol != null)
         {
-            _result.RegisterNode(symbol, symbol.ContainingSymbol, type, node);
+            if (!_result.IsNodeRegistered(symbol))
+            {
+                _result.RegisterNode(symbol, parent, type, node);
+            }
             success = true;
         }
 
-        _result.RegisterResult(node, success, sourceFile, method, lineNumber); 
+        _result.RegisterResult(node, success, sourceFile, method, lineNumber);
         return symbol;
     }
 
-    private void RegisterTypeReference(TypeSyntax node,
-                                    [CallerFilePath] string sourceFile = "",
-                                    [CallerMemberName] string method = "",
-                                    [CallerLineNumber] int lineNumber = 0)
-    {
-        bool success = false;
-        var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
-        if (symbol != null)
-        {
-            var context = _semanticModel.GetEnclosingSymbol(node.SpanStart);
-            if (context != null)
-            {
-                _result.RegisterEdge(context, symbol, EdgeType.TypeUsage);
-                success = true;
-            }
-        }
-        _result.RegisterResult(node, success, sourceFile, method, lineNumber);
-    }
+    //private void RegisterTypeReference(TypeSyntax node,
+    //                                [CallerFilePath] string sourceFile = "",
+    //                                [CallerMemberName] string method = "",
+    //                                [CallerLineNumber] int lineNumber = 0)
+    //{
+    //    bool success = false;
+    //    var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+    //    if (symbol != null)
+    //    {
+    //        var context = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+    //        if (context != null)
+    //        {
+    //            _result.RegisterEdge(context, symbol, EdgeType.TypeUsage);
+    //            success = true;
+    //        }
+    //    }
+    //    _result.RegisterResult(node, success, sourceFile, method, lineNumber);
+    //}
 
-    private void RegisterBaseTypes(INamedTypeSymbol? symbol)
-    {
-        if (symbol == null) return;
+    //private void RegisterBaseTypes(INamedTypeSymbol? symbol)
+    //{
+    //    if (symbol == null) return;
 
-        if (symbol.BaseType != null && symbol.BaseType.SpecialType != SpecialType.System_Object)
-            _result.RegisterEdge(symbol, symbol.BaseType, EdgeType.InheritsFrom);
+    //    if (symbol.BaseType != null && symbol.BaseType.SpecialType != SpecialType.System_Object)
+    //        _result.RegisterEdge(symbol, symbol.BaseType, EdgeType.InheritsFrom);
 
-        foreach (var iface in symbol.Interfaces)
-            _result.RegisterEdge(symbol, iface, EdgeType.Implements);
-    }
+    //    foreach (var iface in symbol.Interfaces)
+    //        _result.RegisterEdge(symbol, iface, EdgeType.Implements);
+    //}
 }

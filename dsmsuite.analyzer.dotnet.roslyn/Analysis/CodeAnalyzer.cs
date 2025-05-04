@@ -11,7 +11,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         {
             CodeAnalysisResult codeAnalysisResult = new CodeAnalysisResult();
             MSBuildWorkspace workspace = MSBuildWorkspace.Create();
-            Solution currSolution = workspace.OpenSolutionAsync(solutionPath).Result;
+            Solution currSolution = await workspace.OpenSolutionAsync(solutionPath);
 
             foreach (Project project in currSolution.Projects)
             {
@@ -19,18 +19,24 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 {
                     Console.WriteLine($"Processing project {project.FilePath}");
 
-                    foreach (var document in project.Documents)
+                    Compilation? compilation = await project.GetCompilationAsync();
+
+                    if (compilation != null)
                     {
-                        if (document.FilePath != null)
+                        foreach (Document document in project.Documents)
                         {
-                            var syntaxTree = await document.GetSyntaxTreeAsync();
-                            var semanticModel = await document.GetSemanticModelAsync();
+                            if (document.FilePath != null)
+                            {
+                                SyntaxTree? syntaxTree = await document.GetSyntaxTreeAsync();
+                                if (syntaxTree != null)
+                                {
+                                    SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
 
-                            if (syntaxTree == null || semanticModel == null) continue;
-
-                            var root = await syntaxTree.GetRootAsync();
-                            var visitor = new SyntaxNodeVisitor(semanticModel, codeAnalysisResult);
-                            visitor.Visit(root);
+                                    SyntaxNode root = await syntaxTree.GetRootAsync();
+                                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, codeAnalysisResult);
+                                    visitor.Visit(root);
+                                }
+                            }
                         }
                     }
                 }

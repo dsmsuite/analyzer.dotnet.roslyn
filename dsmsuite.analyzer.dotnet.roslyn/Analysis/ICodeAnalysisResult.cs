@@ -7,6 +7,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
     public interface ICodeAnalysisResult
     {
+        bool IsNodeRegistered(ISymbol symbol);
         void RegisterResult(SyntaxNode syntaxNode,
                              bool success,
                              [CallerFilePath] string sourceFile = "",

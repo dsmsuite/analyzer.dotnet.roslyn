@@ -1,6 +1,7 @@
-﻿using System;
+﻿using dsmsuite.analyzer.dotnet.testdata.providers;
+using System;
 
-namespace dsmsuite.analyzer.dotnet.testdata.providers
+namespace dsmsuite.analyzer.dotnet.testdata.consumers
 {
     class EventConsumer
     {

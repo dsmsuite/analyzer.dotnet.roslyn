@@ -2,7 +2,7 @@
   "profiles": {
     "dsmsuite.analyzer.dotnet.roslyn": {
       "commandName": "Project",
-      "commandLineArgs": "C:\\Github\\dsmsuite.sourcecode.v2\\Dsmsuite.sln C:\\Github\\dsmsuite.sourcecode.v2/Dsmsuite.sql"
+      "commandLineArgs": "C:\\Github\\dsmsuite.analyzer.dotnet.roslyn\\dsmsuite.analyzer.dotnet.testdata/dsmsuite.analyzer.dotnet.testdata.sln\r\nC:\\Github\\dsmsuite.analyzer.dotnet.roslyn\\dsmsuite.analyzer.dotnet.testdata/testdata.sql"
     }
   }
 }

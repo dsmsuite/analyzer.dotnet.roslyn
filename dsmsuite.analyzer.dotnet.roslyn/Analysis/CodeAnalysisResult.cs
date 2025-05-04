@@ -21,7 +21,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private readonly Dictionary<EdgeType, int> _edgeTypeIds = [];
 
 
-        
+        public bool IsNodeRegistered(ISymbol symbol)
+        {
+            return _nodes.ContainsKey(symbol);
+        }
+
         private void RegisterFilename(string filename)
         {
             if (!_filenameIds.ContainsKey(filename))
@@ -120,7 +124,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 
                 if (filenameId != null && nodeTypeId != null)
                 {
-                    graphRepository.SaveNode(node.Id, node.Fullname, nodeTypeId.Value, parentId, filenameId.Value, node.Startline, node.Endline, node.CyclomaticComplexity);
+                    graphRepository.SaveNode(node.Id, node.Name, nodeTypeId.Value, parentId, filenameId.Value, node.Startline, node.Endline, node.CyclomaticComplexity);
                 }
             }
 

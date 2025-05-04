@@ -1,96 +1,96 @@
 ﻿using dsmsuite.analyzer.dotnet.testdata.providers;
 
-namespace dsmsuite.analyzer.dotnet.testdata.providers
-{ }
-
-class PropertyConsumer
+namespace dsmsuite.analyzer.dotnet.testdata.consumers
 {
-    public PropertyConsumer()
+    class PropertyConsumer
     {
-        IntPropertyWithBackingField = 456;
-        IntProperty = 123;
-        EnumProperty = ProviderEnum.enum_val1;
-        StructProperty = new ProviderStruct(1, "test");
-        ClassProperty = new ProviderClass();
-        ListClassProperty = new List<ProviderListTemplateArgument>();
-        GenericClassProperty = new ProviderGenericClass<ProviderTemplateArgument1, ProviderTemplateArgument2>();
-    }
-
-
-    public void MethodUsingIntMember()
-    {
-        IntProperty = 123;
-    }
-
-    public void MethodUsingEnumMember()
-    {
-        switch (EnumProperty)
+        public PropertyConsumer()
         {
-            case ProviderEnum.enum_val1:
-                break;
-            case ProviderEnum.enum_val2:
-                break;
-            case ProviderEnum.enum_val3:
-                break;
-            default:
-                break;
+            IntPropertyWithBackingField = 456;
+            IntProperty = 123;
+            EnumProperty = ProviderEnum.enum_val1;
+            StructProperty = new ProviderStruct(1, "test");
+            ClassProperty = new ProviderClass();
+            ListClassProperty = new List<ProviderListTemplateArgument>();
+            GenericClassProperty = new ProviderGenericClass<ProviderTemplateArgument1, ProviderTemplateArgument2>();
         }
-    }
 
-    public void MethodUsingStructMember()
-    {
-        if (StructProperty.member1 == 1 && StructProperty.member2 == "test") { }
-    }
 
-    public void MethodUsingClassMember()
-    {
-        ClassProperty.PublicMethodA();
-        ClassProperty.PublicMethodB();
-    }
+        public void MethodUsingIntMember()
+        {
+            IntProperty = 123;
+        }
 
-    public void MethodUsingStdListMember()
-    {
-        // Use explicit type
-        ProviderListTemplateArgument firstElement = ListClassProperty.First<ProviderListTemplateArgument>();
-        firstElement.PublicMethodA();
-        firstElement.PublicMethodB();
+        public void MethodUsingEnumMember()
+        {
+            switch (EnumProperty)
+            {
+                case ProviderEnum.enum_val1:
+                    break;
+                case ProviderEnum.enum_val2:
+                    break;
+                case ProviderEnum.enum_val3:
+                    break;
+                default:
+                    break;
+            }
+        }
 
-        // Use implicit type
-        ListClassProperty[0].PublicMethodC();
-        ListClassProperty[0].PublicMethodD();
-    }
+        public void MethodUsingStructMember()
+        {
+            if (StructProperty.member1 == 1 && StructProperty.member2 == "test") { }
+        }
 
-    public void MethodUsingGenericClassMember()
-    {
-        // Use explicit type
-        ProviderTemplateArgument1? t = GenericClassProperty.GetFirstTemplateArgument();
-        t?.PublicMethodA();
-        t?.PublicMethodB();
+        public void MethodUsingClassMember()
+        {
+            ClassProperty.PublicMethodA();
+            ClassProperty.PublicMethodB();
+        }
 
-        ProviderTemplateArgument2? u = GenericClassProperty.GetSecondTemplateArgument();
-        u?.PublicMethodA();
-        u?.PublicMethodB();
+        public void MethodUsingStdListMember()
+        {
+            // Use explicit type
+            ProviderListTemplateArgument firstElement = ListClassProperty.First<ProviderListTemplateArgument>();
+            firstElement.PublicMethodA();
+            firstElement.PublicMethodB();
 
-        // Use implicit type
-        GenericClassProperty.GetFirstTemplateArgument()?.PublicMethodC();
-        GenericClassProperty.GetFirstTemplateArgument()?.PublicMethodD();
+            // Use implicit type
+            ListClassProperty[0].PublicMethodC();
+            ListClassProperty[0].PublicMethodD();
+        }
 
-        GenericClassProperty.GetSecondTemplateArgument()?.PublicMethodC();
-        GenericClassProperty.GetSecondTemplateArgument()?.PublicMethodD();
-    }
+        public void MethodUsingGenericClassMember()
+        {
+            // Use explicit type
+            ProviderTemplateArgument1? t = GenericClassProperty.GetFirstTemplateArgument();
+            t?.PublicMethodA();
+            t?.PublicMethodB();
 
-    private int _intProtertyBackingField;
+            ProviderTemplateArgument2? u = GenericClassProperty.GetSecondTemplateArgument();
+            u?.PublicMethodA();
+            u?.PublicMethodB();
 
-    public int IntPropertyWithBackingField 
-    { 
-        get {  return _intProtertyBackingField; }
-        set {  _intProtertyBackingField = value; } 
-    }
+            // Use implicit type
+            GenericClassProperty.GetFirstTemplateArgument()?.PublicMethodC();
+            GenericClassProperty.GetFirstTemplateArgument()?.PublicMethodD();
 
-    public int IntProperty { get; set; }
-    public ProviderEnum EnumProperty { get; set; }
-    public ProviderStruct StructProperty { get; set; }
-    public ProviderClass ClassProperty { get; set; }
-    public List<ProviderListTemplateArgument> ListClassProperty { get; set; }
-    public ProviderGenericClass<ProviderTemplateArgument1, ProviderTemplateArgument2> GenericClassProperty { get; set; }
-};
+            GenericClassProperty.GetSecondTemplateArgument()?.PublicMethodC();
+            GenericClassProperty.GetSecondTemplateArgument()?.PublicMethodD();
+        }
+
+        private int _intProtertyBackingField;
+
+        public int IntPropertyWithBackingField
+        {
+            get { return _intProtertyBackingField; }
+            set { _intProtertyBackingField = value; }
+        }
+
+        public int IntProperty { get; set; }
+        public ProviderEnum EnumProperty { get; set; }
+        public ProviderStruct StructProperty { get; set; }
+        public ProviderClass ClassProperty { get; set; }
+        public List<ProviderListTemplateArgument> ListClassProperty { get; set; }
+        public ProviderGenericClass<ProviderTemplateArgument1, ProviderTemplateArgument2> GenericClassProperty { get; set; }
+    };
+}
