@@ -132,12 +132,15 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //public override void VisitTupleType(TupleTypeSyntax node) => RegisterTypeReference(node);
     //public override void VisitAliasQualifiedName(AliasQualifiedNameSyntax node) => RegisterTypeReference(node);
 
-    //// Function Declarations
-    //public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
-    //{
-    //    RegisterSymbol(node, NodeType.Method);
-    //    base.VisitMethodDeclaration(node);
-    //}
+    //// Method declarations
+    public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+    {
+        IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
+        ISymbol? parentSymbol = methodSymbol?.ContainingSymbol;
+        RegisterSymbol(methodSymbol, parentSymbol, node, NodeType.Method);
+
+        base.VisitMethodDeclaration(node);
+    }
 
     //public override void VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
     //{
@@ -145,23 +148,65 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //    base.VisitLocalFunctionStatement(node);
     //}
 
-    //public override void VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
-    //{
-    //    RegisterSymbol(node, NodeType.Constructor);
-    //    base.VisitConstructorDeclaration(node);
-    //}
+    public override void VisitConstructorDeclaration(ConstructorDeclarationSyntax node)
+    {
+        IMethodSymbol? constructorSymbol = _semanticModel.GetDeclaredSymbol(node);
+        ISymbol? parentSymbol = constructorSymbol?.ContainingSymbol;
+        RegisterSymbol(constructorSymbol, parentSymbol, node, NodeType.Constructor);
+        base.VisitConstructorDeclaration(node);
+    }
 
-    //public override void VisitDestructorDeclaration(DestructorDeclarationSyntax node)
-    //{
-    //    RegisterSymbol(node, NodeType.Destructor);
-    //    base.VisitDestructorDeclaration(node);
-    //}
+    public override void VisitDestructorDeclaration(DestructorDeclarationSyntax node)
+    {
+        IMethodSymbol? destructorSymbol = _semanticModel.GetDeclaredSymbol(node);
+        ISymbol? parentSymbol = destructorSymbol?.ContainingSymbol;
+        RegisterSymbol(destructorSymbol, parentSymbol, node, NodeType.Destructor);
+        base.VisitDestructorDeclaration(node);
+    }
 
-    //public override void VisitOperatorDeclaration(OperatorDeclarationSyntax node)
-    //{
-    //    RegisterSymbol(node, NodeType.Operator);
-    //    base.VisitOperatorDeclaration(node);
-    //}
+    public override void VisitOperatorDeclaration(OperatorDeclarationSyntax node)
+    {
+        IMethodSymbol? operatorSymbol = _semanticModel.GetDeclaredSymbol(node);
+        ISymbol? parentSymbol = operatorSymbol?.ContainingSymbol;
+        RegisterSymbol(operatorSymbol, parentSymbol, node, NodeType.Operator);
+        base.VisitOperatorDeclaration(node);
+    }
+
+    // Property Declarations
+    public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
+    {
+        IPropertySymbol? propertySymbol = _semanticModel.GetDeclaredSymbol(node);
+        ISymbol? parentSymbol = propertySymbol?.ContainingSymbol;
+        RegisterSymbol(propertySymbol, parentSymbol, node, NodeType.Property);
+        base.VisitPropertyDeclaration(node);
+    }
+
+    // Field Declarations
+    public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
+    {
+        // Loop over all variables (multiple variables can be declared in one FieldDeclaration) e.g. 'private int x, y;'
+        foreach (VariableDeclaratorSyntax variableNode in node.Declaration.Variables)
+        {
+            IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
+            ISymbol? parentSymbol = fieldSymbol?.ContainingSymbol;
+            RegisterSymbol(fieldSymbol, parentSymbol, node, NodeType.Field);
+        }
+
+        base.VisitFieldDeclaration(node);
+    }
+
+    // Event Declaratioms
+    public override void VisitEventFieldDeclaration(EventFieldDeclarationSyntax node)
+    {
+        foreach (VariableDeclaratorSyntax eventField in node.Declaration.Variables)
+        {
+            IEventSymbol? eventFieldSymbol = _semanticModel.GetDeclaredSymbol(eventField) as IEventSymbol;
+            ISymbol? parentSymbol = eventFieldSymbol?.ContainingSymbol;
+            RegisterSymbol(eventFieldSymbol, parentSymbol, node, NodeType.Event);
+        }
+
+        base.VisitEventFieldDeclaration(node);
+    }
 
     //public override void VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
     //{
