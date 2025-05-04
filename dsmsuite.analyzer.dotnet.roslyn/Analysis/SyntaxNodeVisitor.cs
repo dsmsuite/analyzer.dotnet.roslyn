@@ -59,6 +59,12 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         INamespaceSymbol? parentSymbol = classSymbol?.ContainingNamespace;
         RegisterSymbol(classSymbol, parentSymbol, node, NodeType.Class);
 
+        if (classSymbol != null)
+        {
+            FindBaseType(classSymbol);
+            FindInterfaceTypes(classSymbol);
+        }
+
         base.VisitClassDeclaration(node);
     }
 
@@ -68,6 +74,12 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         INamespaceSymbol? parentSymbol = structSymbol?.ContainingNamespace;
         RegisterSymbol(structSymbol, parentSymbol, node, NodeType.Struct);
 
+        if (structSymbol != null)
+        {
+            FindBaseType(structSymbol);
+            FindInterfaceTypes(structSymbol);
+        }
+
         base.VisitStructDeclaration(node);
     }
 
@@ -76,6 +88,11 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         INamedTypeSymbol? interfaceSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = interfaceSymbol?.ContainingNamespace;
         RegisterSymbol(interfaceSymbol, parentSymbol, node, NodeType.Interface);
+
+        if (interfaceSymbol != null)
+        {
+            FindInterfaceTypes(interfaceSymbol);
+        }
 
         base.VisitInterfaceDeclaration(node);
     }
@@ -286,14 +303,19 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //    _result.RegisterResult(node, success, sourceFile, method, lineNumber);
     //}
 
-    //private void RegisterBaseTypes(INamedTypeSymbol? symbol)
-    //{
-    //    if (symbol == null) return;
+    private void FindBaseType(INamedTypeSymbol symbol)
+    {
+        if (symbol.BaseType != null && symbol.BaseType.SpecialType != SpecialType.System_Object)
+        {
+            _result.RegisterEdge(symbol, symbol.BaseType, EdgeType.InheritsFrom);
+        }
+    }
 
-    //    if (symbol.BaseType != null && symbol.BaseType.SpecialType != SpecialType.System_Object)
-    //        _result.RegisterEdge(symbol, symbol.BaseType, EdgeType.InheritsFrom);
-
-    //    foreach (var iface in symbol.Interfaces)
-    //        _result.RegisterEdge(symbol, iface, EdgeType.Implements);
-    //}
+    private void FindInterfaceTypes(INamedTypeSymbol symbol)
+    {
+        foreach (var iface in symbol.Interfaces)
+        {
+            _result.RegisterEdge(symbol, iface, EdgeType.Implements);
+        }
+    }
 }
