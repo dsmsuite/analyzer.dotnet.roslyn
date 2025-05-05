@@ -1,4 +1,6 @@
-﻿public partial class CSharpSyntaxVisitor<TResult>
+﻿https://learn.microsoft.com/en-us/dotnet/api/microsoft.codeanalysis.csharp.csharpsyntaxvisitor-1?view=roslyn-dotnet-4.9.0
+
+public partial class CSharpSyntaxVisitor<TResult>
 {
     /// <summary>Called when the visitor visits a IdentifierNameSyntax node.</summary>
     public virtual TResult? VisitIdentifierName(IdentifierNameSyntax node) => this.DefaultVisit(node);
