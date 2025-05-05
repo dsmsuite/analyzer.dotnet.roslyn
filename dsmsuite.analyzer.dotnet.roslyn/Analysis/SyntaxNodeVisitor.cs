@@ -3,10 +3,7 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 
 public class SyntaxNodeVisitor : CSharpSyntaxWalker
 {
@@ -216,7 +213,58 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         base.VisitEnumMemberDeclaration(node);
     }
 
-    
+    // Method calls
+    public override void VisitInvocationExpression(InvocationExpressionSyntax node)
+    {
+        IMethodSymbol? callee = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
+        ISymbol? caller = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+        if (callee != null && caller != null)
+        {
+            if (callee.MethodKind == MethodKind.DelegateInvoke)
+            {
+                IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Expression).Symbol as IEventSymbol;
+                RegisterSymbolsEdge(eventSymbol, eventSymbol, EdgeType.Triggers);
+            }
+            else
+            {
+                RegisterSymbolsEdge(caller, callee, EdgeType.Calls);
+            }
+        }
+        base.VisitInvocationExpression(node);
+    }
+
+    public override void VisitReturnStatement(ReturnStatementSyntax node)
+    {
+        base.VisitReturnStatement(node);
+    }
+
+    public override void VisitTypeParameterList(TypeParameterListSyntax node)
+    {
+        base.VisitTypeParameterList(node);
+    }
+
+    public override void VisitTypeParameter(TypeParameterSyntax node)
+    {
+        base.VisitTypeParameter(node);
+    }
+
+    // Event handling
+    public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
+    {
+        IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
+        ISymbol? eventHandlerSymbol = _semanticModel.GetSymbolInfo(node.Right).Symbol;
+        if (node.IsKind(SyntaxKind.AddAssignmentExpression))
+        {
+            RegisterSymbolsEdge(eventHandlerSymbol, eventSymbol, EdgeType.Subscribes);
+        }
+        else if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
+        {
+            RegisterSymbolsEdge(eventHandlerSymbol, eventSymbol, EdgeType.Unsubscribes);
+        }
+
+        base.VisitAssignmentExpression(node);
+    }
+
     //public override void VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
     //{
     //    RegisterSymbol(node, NodeType.ConversionOperator);
@@ -242,17 +290,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //    base.VisitReferenceDirectiveTrivia(node);
     //}
 
-    //// Expressions
-    //public override void VisitInvocationExpression(InvocationExpressionSyntax node)
-    //{
-    //    var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
-    //    var caller = _semanticModel.GetEnclosingSymbol(node.SpanStart);
-    //    if (symbol != null && caller != null)
-    //    {
-    //        _result.RegisterEdge(caller, symbol, EdgeType.Calls);
-    //    }
-    //    base.VisitInvocationExpression(node);
-    //}
+
 
     //public override void VisitMemberAccessExpression(MemberAccessExpressionSyntax node) // Failed=7707/7707
     //{
@@ -315,7 +353,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //}
 
     //// Helper Methods
-    private ISymbol? RegisterSymbol(ISymbol? symbol,
+    private bool RegisterSymbol(ISymbol? symbol,
                                     ISymbol? parent,
                                     SyntaxNode node,
                                     NodeType type,
@@ -335,7 +373,20 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         }
 
         _result.RegisterResult(node, success, sourceFile, method, lineNumber);
-        return symbol;
+        return success;
+    }
+
+    private bool RegisterSymbolsEdge(ISymbol? source, ISymbol? target, EdgeType edgeType)
+    {
+        bool success = false;
+
+        if (source != null && target != null)
+        {
+            _result.RegisterEdge(source, target, edgeType);
+            success = true;
+        }
+
+        return success;
     }
 
     //private void RegisterTypeReference(TypeSyntax node,

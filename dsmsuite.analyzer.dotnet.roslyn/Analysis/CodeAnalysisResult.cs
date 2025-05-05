@@ -3,7 +3,6 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {

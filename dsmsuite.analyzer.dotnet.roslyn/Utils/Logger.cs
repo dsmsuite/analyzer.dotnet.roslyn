@@ -1,5 +1,4 @@
-﻿using Microsoft.Build.Tasks;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -120,10 +119,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
             [CallerLineNumber] int lineNumber = 0)
         {
             LogToFile(LogLevel.Info, "infoMessages.log", sourceFile, method, lineNumber, "info", message);
-         }
+        }
 
-        public static void LogResult(string syntaxNodeFilename, 
-            int syntaxNodeline, 
+        public static void LogResult(string syntaxNodeFilename,
+            int syntaxNodeline,
             bool success,
             [CallerFilePath] string sourceFile = "",
             [CallerMemberName] string method = "",
@@ -162,9 +161,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
             LogSummary();
         }
 
-        private static void LogToFile(LogLevel logLevel, string logFilename, string sourceFile, string method, int lineNumber, string  catagory, string message)
+        private static void LogToFile(LogLevel logLevel, string logFilename, string sourceFile, string method, int lineNumber, string catagory, string message)
         {
-             if (LogLevel >= logLevel)
+            if (LogLevel >= logLevel)
             {
                 string path = GetLogFullPath(logFilename);
                 FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);

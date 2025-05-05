@@ -1,7 +1,5 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using SQLitePCL;
-using System.Xml.Linq;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Data
 {
@@ -60,7 +58,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
                 using var transaction = connection.BeginTransaction();
 
-                 using (var command = connection.CreateCommand())
+                using (var command = connection.CreateCommand())
                 {
                     command.CommandText = @"INSERT INTO EdgeType (id, name)
                                             VALUES (@id, @name);";
@@ -135,7 +133,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
             using var transaction = connection.BeginTransaction();
 
             using (var command = connection.CreateCommand())
-            { 
+            {
                 command.CommandText = @"INSERT INTO Edge (id, source_id, target_id, edge_type_id, strength, source_file_id, line_no, annotation)
                                         VALUES (@id, @source_id, @target_id, @edge_type_id, @strength, @source_file_id, @line_no, @annotation);";
 

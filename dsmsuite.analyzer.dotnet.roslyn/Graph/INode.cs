@@ -1,6 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-
-namespace dsmsuite.analyzer.dotnet.roslyn.Graph
+﻿namespace dsmsuite.analyzer.dotnet.roslyn.Graph
 {
     public interface INode
     {
