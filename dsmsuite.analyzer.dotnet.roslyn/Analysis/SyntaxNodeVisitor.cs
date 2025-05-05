@@ -208,6 +208,15 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         base.VisitEventFieldDeclaration(node);
     }
 
+    public override void VisitEnumMemberDeclaration(EnumMemberDeclarationSyntax node)
+    {
+        IFieldSymbol? enumMemberSymbol = _semanticModel.GetDeclaredSymbol(node);
+        ISymbol? parentSymbol = enumMemberSymbol?.ContainingSymbol;
+        RegisterSymbol(enumMemberSymbol, parentSymbol, node, NodeType.Property);
+        base.VisitEnumMemberDeclaration(node);
+    }
+
+    
     //public override void VisitConversionOperatorDeclaration(ConversionOperatorDeclarationSyntax node)
     //{
     //    RegisterSymbol(node, NodeType.ConversionOperator);
