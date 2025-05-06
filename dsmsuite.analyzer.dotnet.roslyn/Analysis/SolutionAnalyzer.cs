@@ -5,15 +5,15 @@ using Microsoft.CodeAnalysis.MSBuild;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
-    public class CodeAnalyzer : ICodeAnalyzer
+    public class SolutionAnalyzer : ICodeAnalyzer
     {
-        public async Task AnalyzeAsync(string solutionPath, IGraphRepository graphRepository)
+        public async Task AnalyzeAsync(string InputPath, IGraphRepository graphRepository)
         {
             CodeAnalysisResult codeAnalysisResult = new CodeAnalysisResult();
             MSBuildWorkspace workspace = MSBuildWorkspace.Create();
-            Solution currSolution = await workspace.OpenSolutionAsync(solutionPath);
+            Solution solution = await workspace.OpenSolutionAsync(InputPath);
 
-            foreach (Project project in currSolution.Projects)
+            foreach (Project project in solution.Projects)
             {
                 if (project.FilePath != null)
                 {

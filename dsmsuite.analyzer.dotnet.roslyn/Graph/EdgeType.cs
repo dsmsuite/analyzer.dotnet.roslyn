@@ -10,13 +10,17 @@
         VariableUsage,
         ParameterUsage,
         FieldUsage,
-        Parameter,
-        Returns,
-        Subscribes,
-        Unsubscribes,
-        Triggers,
+        ParameterType,
+        ReturnType,
+        FieldType,
+        PropertyType,
+        VariableType,
+        SubscribeEvent,
+        UnsubscribeEvent,
+        TriggerEvent,
+        HandlEvent,
         TypeUsage,
         InheritsFrom,
-        Calls
+        Type,
     }
 }

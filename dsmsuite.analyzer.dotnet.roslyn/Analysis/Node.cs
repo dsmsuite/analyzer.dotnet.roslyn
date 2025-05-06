@@ -12,7 +12,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private NodeType _nodeType;
         private int _cyclomaticComplexity;
 
-        public Node(int id, ISymbol symbol, ISymbol parent, SyntaxNode syntaxNode, NodeType nodeType, int cyclomaticComplexity)
+        public Node(int id, ISymbol symbol, ISymbol? parent, SyntaxNode syntaxNode, NodeType nodeType, int cyclomaticComplexity)
         {
             _id = id;
             _symbol = symbol;

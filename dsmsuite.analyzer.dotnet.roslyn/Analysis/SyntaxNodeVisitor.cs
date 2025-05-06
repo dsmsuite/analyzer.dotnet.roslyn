@@ -3,7 +3,9 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 
 public class SyntaxNodeVisitor : CSharpSyntaxWalker
 {
@@ -28,7 +30,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
             {
                 if (!namespaceSymbol.IsGlobalNamespace)
                 {
-                    RegisterSymbol(namespaceSymbol, namespaceSymbol.ContainingNamespace, node, NodeType.Namespace);
+                    RegisterNode(node, namespaceSymbol, namespaceSymbol.ContainingNamespace, NodeType.Namespace);
                 }
                 namespaceSymbol = namespaceSymbol.ContainingNamespace;
             }
@@ -54,7 +56,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? classSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = classSymbol?.ContainingNamespace;
-        RegisterSymbol(classSymbol, parentSymbol, node, NodeType.Class);
+        RegisterNode(node, classSymbol, parentSymbol, NodeType.Class);
 
         if (classSymbol != null)
         {
@@ -69,7 +71,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? structSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = structSymbol?.ContainingNamespace;
-        RegisterSymbol(structSymbol, parentSymbol, node, NodeType.Struct);
+        RegisterNode(node, structSymbol, parentSymbol, NodeType.Struct);
 
         if (structSymbol != null)
         {
@@ -84,7 +86,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? interfaceSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = interfaceSymbol?.ContainingNamespace;
-        RegisterSymbol(interfaceSymbol, parentSymbol, node, NodeType.Interface);
+        RegisterNode(node, interfaceSymbol, parentSymbol, NodeType.Interface);
 
         if (interfaceSymbol != null)
         {
@@ -98,7 +100,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? enumSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = enumSymbol?.ContainingNamespace;
-        RegisterSymbol(enumSymbol, parentSymbol, node, NodeType.Enum);
+        RegisterNode(node, enumSymbol, parentSymbol, NodeType.Enum);
 
         base.VisitEnumDeclaration(node);
     }
@@ -134,7 +136,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = methodSymbol?.ContainingSymbol;
-        RegisterSymbol(methodSymbol, parentSymbol, node, NodeType.Method);
+        RegisterNode(node, methodSymbol, parentSymbol, NodeType.Method);
 
         base.VisitMethodDeclaration(node);
     }
@@ -149,7 +151,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? constructorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = constructorSymbol?.ContainingSymbol;
-        RegisterSymbol(constructorSymbol, parentSymbol, node, NodeType.Constructor);
+        RegisterNode(node, constructorSymbol, parentSymbol, NodeType.Constructor);
         base.VisitConstructorDeclaration(node);
     }
 
@@ -157,7 +159,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? destructorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = destructorSymbol?.ContainingSymbol;
-        RegisterSymbol(destructorSymbol, parentSymbol, node, NodeType.Destructor);
+        RegisterNode(node, destructorSymbol, parentSymbol, NodeType.Destructor);
         base.VisitDestructorDeclaration(node);
     }
 
@@ -165,31 +167,54 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? operatorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = operatorSymbol?.ContainingSymbol;
-        RegisterSymbol(operatorSymbol, parentSymbol, node, NodeType.Operator);
+        RegisterNode(node, operatorSymbol, parentSymbol, NodeType.Operator);
         base.VisitOperatorDeclaration(node);
     }
 
     // Property Declarations
-    public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
+    public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node) 
     {
         IPropertySymbol? propertySymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = propertySymbol?.ContainingSymbol;
-        RegisterSymbol(propertySymbol, parentSymbol, node, NodeType.Property);
+        RegisterNode(node, propertySymbol, parentSymbol, NodeType.Property);
+
+        ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
+        RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.PropertyType); // TODO: Line=182 Failed=8/8
+
         base.VisitPropertyDeclaration(node);
     }
 
     // Field Declarations
     public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
     {
-        // Loop over all variables (multiple variables can be declared in one FieldDeclaration) e.g. 'private int x, y;'
+        // Loop over all fields (multiple fields can be declared in one FieldDeclaration) e.g. 'private int x, y;'
         foreach (VariableDeclaratorSyntax variableNode in node.Declaration.Variables)
         {
             IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
             ISymbol? parentSymbol = fieldSymbol?.ContainingSymbol;
-            RegisterSymbol(fieldSymbol, parentSymbol, node, NodeType.Field);
+            RegisterNode(node, fieldSymbol, parentSymbol, NodeType.Field);
+
+            ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
+            RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.FieldType); // TODO: Line=198 Failed=23/23
         }
 
         base.VisitFieldDeclaration(node);
+    }
+
+    public override void VisitVariableDeclaration(VariableDeclarationSyntax node) // TODO: Failed=36/59
+    {
+        // Loop over all variables (multiple variables can be declared in one VariableDeclarationSyntax) e.g. 'private int x, y;'
+        foreach (VariableDeclaratorSyntax variableNode in node.Variables)
+        {
+            IFieldSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
+            ISymbol? parentSymbol = variableSymbol?.ContainingSymbol;
+            RegisterNode(node, variableSymbol, parentSymbol, NodeType.Variable); // TODO: Line = 211 Failed = 36 / 59
+
+            ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
+            RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.VariableType); // TODO: Line=214 Failed=59/59
+        }
+
+        base.VisitVariableDeclaration(node);
     }
 
     // Event Declaratioms
@@ -199,7 +224,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             IEventSymbol? eventFieldSymbol = _semanticModel.GetDeclaredSymbol(eventField) as IEventSymbol;
             ISymbol? parentSymbol = eventFieldSymbol?.ContainingSymbol;
-            RegisterSymbol(eventFieldSymbol, parentSymbol, node, NodeType.Event);
+            RegisterNode(node, eventFieldSymbol, parentSymbol, NodeType.Event);
         }
 
         base.VisitEventFieldDeclaration(node);
@@ -209,7 +234,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IFieldSymbol? enumMemberSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = enumMemberSymbol?.ContainingSymbol;
-        RegisterSymbol(enumMemberSymbol, parentSymbol, node, NodeType.Property);
+        RegisterNode(node, enumMemberSymbol, parentSymbol, NodeType.EnumValue);
         base.VisitEnumMemberDeclaration(node);
     }
 
@@ -223,11 +248,11 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
             if (callee.MethodKind == MethodKind.DelegateInvoke)
             {
                 IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Expression).Symbol as IEventSymbol;
-                RegisterSymbolsEdge(eventSymbol, eventSymbol, EdgeType.Triggers);
+                RegisterEdge(node, eventSymbol, eventSymbol, EdgeType.TriggerEvent); // TODO: Line=251 Failed=1/1
             }
             else
             {
-                RegisterSymbolsEdge(caller, callee, EdgeType.Calls);
+                RegisterEdge(node, caller, callee, EdgeType.Call);
             }
         }
         base.VisitInvocationExpression(node);
@@ -235,16 +260,19 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
 
     public override void VisitReturnStatement(ReturnStatementSyntax node)
     {
-        base.VisitReturnStatement(node);
-    }
+        ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
+        ISymbol? parentSymbol = typeSymbol?.ContainingSymbol;
+        RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.ReturnType); // TODO: Line=265 Failed=10/10
 
-    public override void VisitTypeParameterList(TypeParameterListSyntax node)
-    {
-        base.VisitTypeParameterList(node);
+        base.VisitReturnStatement(node);
     }
 
     public override void VisitTypeParameter(TypeParameterSyntax node)
     {
+        ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
+        ISymbol? parentSymbol = typeSymbol?.ContainingSymbol;
+        RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.ParameterType); // TODO: Line=274 Failed=2/2
+
         base.VisitTypeParameter(node);
     }
 
@@ -253,13 +281,15 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
         ISymbol? eventHandlerSymbol = _semanticModel.GetSymbolInfo(node.Right).Symbol;
+        ISymbol? parentSymbol = eventSymbol?.ContainingSymbol;
         if (node.IsKind(SyntaxKind.AddAssignmentExpression))
         {
-            RegisterSymbolsEdge(eventHandlerSymbol, eventSymbol, EdgeType.Subscribes);
+            RegisterEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.SubscribeEvent);
+            RegisterEdge(node, parentSymbol, eventSymbol, EdgeType.HandlEvent);
         }
         else if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
         {
-            RegisterSymbolsEdge(eventHandlerSymbol, eventSymbol, EdgeType.Unsubscribes);
+            RegisterEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.UnsubscribeEvent);
         }
 
         base.VisitAssignmentExpression(node);
@@ -353,38 +383,47 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //}
 
     //// Helper Methods
-    private bool RegisterSymbol(ISymbol? symbol,
-                                    ISymbol? parent,
-                                    SyntaxNode node,
-                                    NodeType type,
-                                    [CallerFilePath] string sourceFile = "",
-                                    [CallerMemberName] string method = "",
-                                    [CallerLineNumber] int lineNumber = 0)
+    private bool RegisterNode(SyntaxNode node, 
+                              ISymbol? nodeSymbol,
+                              ISymbol? parent,
+                              NodeType nodeType,
+                              [CallerFilePath] string sourceFile = "",
+                              [CallerMemberName] string method = "",
+                              [CallerLineNumber] int lineNumber = 0)
     {
         bool success = false;
-
-        if (symbol != null)
+        string actionDescription = $"Parse node={nodeType}";
+        if (nodeSymbol != null)
         {
-            if (!_result.IsNodeRegistered(symbol))
+            if (!_result.IsNodeRegistered(nodeSymbol))
             {
-                _result.RegisterNode(symbol, parent, type, node);
+                _result.RegisterNode(nodeSymbol, parent, nodeType, node);
             }
             success = true;
         }
 
-        _result.RegisterResult(node, success, sourceFile, method, lineNumber);
+        _result.RegisterResult(actionDescription, node, success, sourceFile, method, lineNumber);
         return success;
     }
 
-    private bool RegisterSymbolsEdge(ISymbol? source, ISymbol? target, EdgeType edgeType)
+    private bool RegisterEdge(SyntaxNode node, 
+                               ISymbol? edgeSource,
+                               ISymbol? edgeTarget,
+                               EdgeType edgeType,
+                               [CallerFilePath] string sourceFile = "",
+                               [CallerMemberName] string method = "",
+                               [CallerLineNumber] int lineNumber = 0)
     {
         bool success = false;
+        string actionDescription = $"Parse edge={edgeType}";
 
-        if (source != null && target != null)
+        if (edgeSource != null && edgeTarget != null)
         {
-            _result.RegisterEdge(source, target, edgeType);
+            _result.RegisterEdge(edgeSource, edgeTarget, edgeType);
             success = true;
         }
+
+        _result.RegisterResult(actionDescription, node, success, sourceFile, method, lineNumber);
 
         return success;
     }

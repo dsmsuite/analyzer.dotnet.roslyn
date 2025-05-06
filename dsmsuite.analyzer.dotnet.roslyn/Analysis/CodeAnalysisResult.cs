@@ -52,16 +52,17 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
-        public void RegisterResult(SyntaxNode syntaxNode,
-                                     bool success,
-                                     [CallerFilePath] string sourceFile = "",
-                                     [CallerMemberName] string method = "",
-                                     [CallerLineNumber] int lineNumber = 0)
+        public void RegisterResult(string actionDescription,
+                                   SyntaxNode syntaxNode,
+                                   bool success,
+                                   [CallerFilePath] string sourceFile = "",
+                                   [CallerMemberName] string method = "",
+                                   [CallerLineNumber] int lineNumber = 0)
         {
             string syntaxNodeFilename = syntaxNode.SyntaxTree?.FilePath ?? "";
             int syntaxNodeline = syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line;
 
-            Logger.LogResult(syntaxNodeFilename, syntaxNodeline, success, sourceFile, method, lineNumber);
+            Logger.LogResult(actionDescription, syntaxNodeFilename, syntaxNodeline, success, sourceFile, method, lineNumber);
         }
 
         public int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)

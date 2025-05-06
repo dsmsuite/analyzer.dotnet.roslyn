@@ -43,7 +43,7 @@ if (outputFileFileInfo.Exists)
 var services = new ServiceCollection();
 
 // Register dependencies
-services.AddSingleton<ICodeAnalyzer, CodeAnalyzer>();
+services.AddSingleton<ICodeAnalyzer, SolutionAnalyzer>();
 services.AddSingleton<IGraphRepository>(provider => new SqliteGraphRepository(outputFileFileInfo.FullName));
 
 var serviceProvider = services.BuildServiceProvider();

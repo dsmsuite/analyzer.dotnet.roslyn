@@ -11,29 +11,33 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
     {
         private static Assembly _assembly;
         private static string _logPath;
-        private static readonly Dictionary<LogLocation, int> _locationLogTotalCount;
-        private static readonly Dictionary<LogLocation, int> _locationLogFailedCount;
-        public class LogLocation
+        private static readonly Dictionary<Action, int> _actionTotalCount;
+        private static readonly Dictionary<Action, int> _actionFailedCount;
+
+        public class Action
         {
-            public LogLocation(string file, string method, int line)
+            public Action(string description, string file, string method, int line)
             {
+                Description = description;
                 File = file;
                 Method = method;
                 Line = line;
             }
 
             public string File { get; }
+            public string Description { get; }
             public string Method { get; }
             public int Line { get; }
 
             public override int GetHashCode()
             {
-                return HashCode.Combine(File, Method, Line);
+                return HashCode.Combine(Description, File, Method, Line);
             }
 
             public override bool Equals(object obj)
             {
-                return obj is LogLocation other &&
+                return obj is Action other &&
+                       Description == other.Description &&
                        File == other.File &&
                        Method == other.Method &&
                        Line == other.Line;
@@ -44,8 +48,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
 
         static Logger()
         {
-            _locationLogTotalCount = new Dictionary<LogLocation, int>();
-            _locationLogFailedCount = new Dictionary<LogLocation, int>();
+            _actionTotalCount = new Dictionary<Action, int>();
+            _actionFailedCount = new Dictionary<Action, int>();
         }
 
         public static void Init(Assembly assembly, bool logInCurrentDirectory)
@@ -121,25 +125,26 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
             LogToFile(LogLevel.Info, "infoMessages.log", sourceFile, method, lineNumber, "info", message);
         }
 
-        public static void LogResult(string syntaxNodeFilename,
+        public static void LogResult(string actionDescription,
+            string syntaxNodeFilename,
             int syntaxNodeline,
             bool success,
             [CallerFilePath] string sourceFile = "",
             [CallerMemberName] string method = "",
             [CallerLineNumber] int lineNumber = 0)
         {
-            LogLocation logLocation = new LogLocation(sourceFile, method, lineNumber);
-            IncrementLocationCount(_locationLogTotalCount, logLocation);
+            Action action = new Action(actionDescription, sourceFile, method, lineNumber);
+            IncrementActionCount(_actionTotalCount, action);
 
             if (!success)
             {
-                IncrementLocationCount(_locationLogFailedCount, logLocation);
+                IncrementActionCount(_actionFailedCount, action);
 
-                LogError($"Failed to parse source code file={syntaxNodeFilename} line={syntaxNodeline}", sourceFile, method, lineNumber);
+                LogError($"Action={actionDescription} failed in file={syntaxNodeFilename} line={syntaxNodeline}", sourceFile, method, lineNumber);
             }
         }
 
-        private static void IncrementLocationCount(Dictionary<LogLocation, int> locationLogCount, LogLocation logLocation)
+        private static void IncrementActionCount(Dictionary<Action, int> locationLogCount, Action logLocation)
         {
             if (locationLogCount.ContainsKey(logLocation))
             {
@@ -151,7 +156,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
             }
         }
 
-        private static int GetLocationCount(Dictionary<LogLocation, int> locationLogCount, LogLocation logLocation)
+        private static int GetLocationCount(Dictionary<Action, int> locationLogCount, Action logLocation)
         {
             return locationLogCount.ContainsKey(logLocation) ? locationLogCount[logLocation] : 0;
         }
@@ -180,11 +185,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
             FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
             using (StreamWriter writer = new StreamWriter(fs))
             {
-                foreach (LogLocation location in _locationLogTotalCount.Keys)
+                foreach (Action action in _actionTotalCount.Keys)
                 {
-                    int failed = GetLocationCount(_locationLogFailedCount, location);
-                    int total = GetLocationCount(_locationLogTotalCount, location);
-                    writer.WriteLine($"File={location.File} Method={location.Method} Line={location.Line} Failed={failed}/{total}");
+                    int failed = GetLocationCount(_actionFailedCount, action);
+                    int total = GetLocationCount(_actionTotalCount, action);
+                    writer.WriteLine($"Action={action.Description} File={action.File} Method={action.Method} Line={action.Line} Failed={failed}/{total}");
                 }
             }
         }

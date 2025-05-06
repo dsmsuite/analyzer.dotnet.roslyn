@@ -4,6 +4,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
     public interface ICodeAnalyzer
     {
-        Task AnalyzeAsync(string solutionPath, IGraphRepository graphRepository);
+        Task AnalyzeAsync(string InputPath, IGraphRepository graphRepository);
     }
 }
