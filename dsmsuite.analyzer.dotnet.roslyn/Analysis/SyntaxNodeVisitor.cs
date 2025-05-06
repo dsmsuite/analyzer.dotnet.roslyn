@@ -180,8 +180,8 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         ISymbol? parentSymbol = propertySymbol?.ContainingSymbol;
         RegisterNodeIfNotNull(node, propertySymbol, parentSymbol, NodeType.Property);
 
-        ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
-        RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.PropertyType); // TODO: Line=182 Failed=8/8
+        ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
+        RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.PropertyType); 
 
         base.VisitPropertyDeclaration(node);
     }
@@ -207,9 +207,9 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         foreach (VariableDeclaratorSyntax variableNode in node.Variables)
         {
-            IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
-            ISymbol? parentSymbol = fieldSymbol?.ContainingSymbol;
-            RegisterNodeIfNotNull(variableNode, fieldSymbol, parentSymbol, NodeType.Variable); // Line=212 Failed=36/59
+            ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as ILocalSymbol;
+            ISymbol? parentSymbol = variableSymbol?.ContainingSymbol;
+            RegisterNodeIfNotNull(variableNode, variableSymbol, parentSymbol, NodeType.Variable); //  Line=212 Failed=36/59
 
             ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
             RegisterEdgeIfNotNull(variableNode, parentSymbol, typeSymbol, EdgeType.VariableType); // Line=215 Failed=36/59
