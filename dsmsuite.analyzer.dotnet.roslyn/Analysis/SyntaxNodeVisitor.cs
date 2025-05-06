@@ -30,7 +30,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
             {
                 if (!namespaceSymbol.IsGlobalNamespace)
                 {
-                    RegisterNode(node, namespaceSymbol, namespaceSymbol.ContainingNamespace, NodeType.Namespace);
+                    RegisterNodeIfNotNull(node, namespaceSymbol, namespaceSymbol.ContainingNamespace, NodeType.Namespace);
                 }
                 namespaceSymbol = namespaceSymbol.ContainingNamespace;
             }
@@ -56,7 +56,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? classSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = classSymbol?.ContainingNamespace;
-        RegisterNode(node, classSymbol, parentSymbol, NodeType.Class);
+        RegisterNodeIfNotNull(node, classSymbol, parentSymbol, NodeType.Class);
 
         if (classSymbol != null)
         {
@@ -71,7 +71,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? structSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = structSymbol?.ContainingNamespace;
-        RegisterNode(node, structSymbol, parentSymbol, NodeType.Struct);
+        RegisterNodeIfNotNull(node, structSymbol, parentSymbol, NodeType.Struct);
 
         if (structSymbol != null)
         {
@@ -86,7 +86,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? interfaceSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = interfaceSymbol?.ContainingNamespace;
-        RegisterNode(node, interfaceSymbol, parentSymbol, NodeType.Interface);
+        RegisterNodeIfNotNull(node, interfaceSymbol, parentSymbol, NodeType.Interface);
 
         if (interfaceSymbol != null)
         {
@@ -100,7 +100,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? enumSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = enumSymbol?.ContainingNamespace;
-        RegisterNode(node, enumSymbol, parentSymbol, NodeType.Enum);
+        RegisterNodeIfNotNull(node, enumSymbol, parentSymbol, NodeType.Enum);
 
         base.VisitEnumDeclaration(node);
     }
@@ -136,7 +136,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = methodSymbol?.ContainingSymbol;
-        RegisterNode(node, methodSymbol, parentSymbol, NodeType.Method);
+        RegisterNodeIfNotNull(node, methodSymbol, parentSymbol, NodeType.Method);
 
         base.VisitMethodDeclaration(node);
     }
@@ -151,7 +151,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? constructorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = constructorSymbol?.ContainingSymbol;
-        RegisterNode(node, constructorSymbol, parentSymbol, NodeType.Constructor);
+        RegisterNodeIfNotNull(node, constructorSymbol, parentSymbol, NodeType.Constructor);
         base.VisitConstructorDeclaration(node);
     }
 
@@ -159,7 +159,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? destructorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = destructorSymbol?.ContainingSymbol;
-        RegisterNode(node, destructorSymbol, parentSymbol, NodeType.Destructor);
+        RegisterNodeIfNotNull(node, destructorSymbol, parentSymbol, NodeType.Destructor);
         base.VisitDestructorDeclaration(node);
     }
 
@@ -167,7 +167,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? operatorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = operatorSymbol?.ContainingSymbol;
-        RegisterNode(node, operatorSymbol, parentSymbol, NodeType.Operator);
+        RegisterNodeIfNotNull(node, operatorSymbol, parentSymbol, NodeType.Operator);
         base.VisitOperatorDeclaration(node);
     }
 
@@ -176,10 +176,10 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IPropertySymbol? propertySymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = propertySymbol?.ContainingSymbol;
-        RegisterNode(node, propertySymbol, parentSymbol, NodeType.Property);
+        RegisterNodeIfNotNull(node, propertySymbol, parentSymbol, NodeType.Property);
 
         ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
-        RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.PropertyType); // TODO: Line=182 Failed=8/8
+        RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.PropertyType); // TODO: Line=182 Failed=8/8
 
         base.VisitPropertyDeclaration(node);
     }
@@ -192,30 +192,16 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
             ISymbol? parentSymbol = fieldSymbol?.ContainingSymbol;
-            RegisterNode(node, fieldSymbol, parentSymbol, NodeType.Field);
+            RegisterNodeIfNotNull(node, fieldSymbol, parentSymbol, NodeType.Field);
 
             ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
-            RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.FieldType); // TODO: Line=198 Failed=23/23
+            RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.FieldType); // TODO: Line=198 Failed=23/23
         }
 
         base.VisitFieldDeclaration(node);
     }
 
-    public override void VisitVariableDeclaration(VariableDeclarationSyntax node) // TODO: Failed=36/59
-    {
-        // Loop over all variables (multiple variables can be declared in one VariableDeclarationSyntax) e.g. 'private int x, y;'
-        foreach (VariableDeclaratorSyntax variableNode in node.Variables)
-        {
-            IFieldSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
-            ISymbol? parentSymbol = variableSymbol?.ContainingSymbol;
-            RegisterNode(node, variableSymbol, parentSymbol, NodeType.Variable); // TODO: Line = 211 Failed = 36 / 59
 
-            ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
-            RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.VariableType); // TODO: Line=214 Failed=59/59
-        }
-
-        base.VisitVariableDeclaration(node);
-    }
 
     // Event Declaratioms
     public override void VisitEventFieldDeclaration(EventFieldDeclarationSyntax node)
@@ -224,7 +210,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             IEventSymbol? eventFieldSymbol = _semanticModel.GetDeclaredSymbol(eventField) as IEventSymbol;
             ISymbol? parentSymbol = eventFieldSymbol?.ContainingSymbol;
-            RegisterNode(node, eventFieldSymbol, parentSymbol, NodeType.Event);
+            RegisterNodeIfNotNull(node, eventFieldSymbol, parentSymbol, NodeType.Event);
         }
 
         base.VisitEventFieldDeclaration(node);
@@ -234,7 +220,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IFieldSymbol? enumMemberSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = enumMemberSymbol?.ContainingSymbol;
-        RegisterNode(node, enumMemberSymbol, parentSymbol, NodeType.EnumValue);
+        RegisterNodeIfNotNull(node, enumMemberSymbol, parentSymbol, NodeType.EnumValue);
         base.VisitEnumMemberDeclaration(node);
     }
 
@@ -248,11 +234,11 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
             if (callee.MethodKind == MethodKind.DelegateInvoke)
             {
                 IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Expression).Symbol as IEventSymbol;
-                RegisterEdge(node, eventSymbol, eventSymbol, EdgeType.TriggerEvent); // TODO: Line=251 Failed=1/1
+                RegisterEdgeIfNotNull(node, eventSymbol, eventSymbol, EdgeType.TriggerEvent); // TODO: Line=251 Failed=1/1
             }
             else
             {
-                RegisterEdge(node, caller, callee, EdgeType.Call);
+                RegisterEdgeIfNotNull(node, caller, callee, EdgeType.Call);
             }
         }
         base.VisitInvocationExpression(node);
@@ -262,7 +248,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
         ISymbol? parentSymbol = typeSymbol?.ContainingSymbol;
-        RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.ReturnType); // TODO: Line=265 Failed=10/10
+        RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.ReturnType); // TODO: Line=265 Failed=10/10
 
         base.VisitReturnStatement(node);
     }
@@ -271,7 +257,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
         ISymbol? parentSymbol = typeSymbol?.ContainingSymbol;
-        RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.ParameterType); // TODO: Line=274 Failed=2/2
+        RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.ParameterType); // TODO: Line=274 Failed=2/2
 
         base.VisitTypeParameter(node);
     }
@@ -284,12 +270,12 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         ISymbol? parentSymbol = eventSymbol?.ContainingSymbol;
         if (node.IsKind(SyntaxKind.AddAssignmentExpression))
         {
-            RegisterEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.SubscribeEvent);
-            RegisterEdge(node, parentSymbol, eventSymbol, EdgeType.HandlEvent);
+            RegisterEdgeIfNotNull(node, eventHandlerSymbol, eventSymbol, EdgeType.SubscribeEvent);
+            RegisterEdgeIfNotNull(node, parentSymbol, eventSymbol, EdgeType.HandlEvent);
         }
         else if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
         {
-            RegisterEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.UnsubscribeEvent);
+            RegisterEdgeIfNotNull(node, eventHandlerSymbol, eventSymbol, EdgeType.UnsubscribeEvent);
         }
 
         base.VisitAssignmentExpression(node);
@@ -383,7 +369,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //}
 
     //// Helper Methods
-    private bool RegisterNode(SyntaxNode node, 
+    private bool RegisterNodeIfNotNull(SyntaxNode node, 
                               ISymbol? nodeSymbol,
                               ISymbol? parent,
                               NodeType nodeType,
@@ -406,7 +392,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         return success;
     }
 
-    private bool RegisterEdge(SyntaxNode node, 
+    private bool RegisterEdgeIfNotNull(SyntaxNode node, 
                                ISymbol? edgeSource,
                                ISymbol? edgeTarget,
                                EdgeType edgeType,
