@@ -3,6 +3,7 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.FlowAnalysis;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Xml.Linq;
@@ -136,7 +137,8 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = methodSymbol?.ContainingSymbol;
-        RegisterNodeIfNotNull(node, methodSymbol, parentSymbol, NodeType.Method);
+        int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
+        RegisterNodeIfNotNull(node, methodSymbol, parentSymbol, NodeType.Method, cyclomaticComplexity);
 
         base.VisitMethodDeclaration(node);
     }
@@ -187,20 +189,34 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     // Field Declarations
     public override void VisitFieldDeclaration(FieldDeclarationSyntax node)
     {
-        // Loop over all fields (multiple fields can be declared in one FieldDeclaration) e.g. 'private int x, y;'
         foreach (VariableDeclaratorSyntax variableNode in node.Declaration.Variables)
         {
             IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
-            ISymbol? parentSymbol = fieldSymbol?.ContainingSymbol;
-            RegisterNodeIfNotNull(node, fieldSymbol, parentSymbol, NodeType.Field);
+            ISymbol? parentSymbol = fieldSymbol.ContainingSymbol;
+            RegisterNodeIfNotNull(variableNode, fieldSymbol, parentSymbol, NodeType.Field);
 
-            ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
-            RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.FieldType); // TODO: Line=198 Failed=23/23
+            ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Declaration.Type).Type;
+            RegisterEdgeIfNotNull(variableNode, parentSymbol, typeSymbol, EdgeType.FieldType);
         }
 
         base.VisitFieldDeclaration(node);
     }
 
+    // Vafaiable Declarations
+    public override void VisitVariableDeclaration(VariableDeclarationSyntax node)
+    {
+        foreach (VariableDeclaratorSyntax variableNode in node.Variables)
+        {
+            IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
+            ISymbol? parentSymbol = fieldSymbol?.ContainingSymbol;
+            RegisterNodeIfNotNull(variableNode, fieldSymbol, parentSymbol, NodeType.Variable); // Line=212 Failed=36/59
+
+            ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
+            RegisterEdgeIfNotNull(variableNode, parentSymbol, typeSymbol, EdgeType.VariableType); // Line=215 Failed=36/59
+        }
+
+        base.VisitVariableDeclaration(node);
+    }
 
 
     // Event Declaratioms
@@ -234,7 +250,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
             if (callee.MethodKind == MethodKind.DelegateInvoke)
             {
                 IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Expression).Symbol as IEventSymbol;
-                RegisterEdgeIfNotNull(node, eventSymbol, eventSymbol, EdgeType.TriggerEvent); // TODO: Line=251 Failed=1/1
+                RegisterEdgeIfNotNull(node, caller, eventSymbol, EdgeType.TriggerEvent); //Line=253 Failed=1/1
             }
             else
             {
@@ -246,18 +262,26 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
 
     public override void VisitReturnStatement(ReturnStatementSyntax node)
     {
-        ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
-        ISymbol? parentSymbol = typeSymbol?.ContainingSymbol;
-        RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.ReturnType); // TODO: Line=265 Failed=10/10
+        ITypeSymbol? returnTypeSymbol = _semanticModel.GetTypeInfo(node.Expression).Type;
+        ISymbol? parentSymbol = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+        RegisterEdgeIfNotNull(node, parentSymbol, returnTypeSymbol, EdgeType.ReturnType);
 
         base.VisitReturnStatement(node);
     }
 
     public override void VisitTypeParameter(TypeParameterSyntax node)
     {
-        ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node).Type;
-        ISymbol? parentSymbol = typeSymbol?.ContainingSymbol;
-        RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.ParameterType); // TODO: Line=274 Failed=2/2
+        ITypeParameterSymbol? typeParameterSymbol = _semanticModel.GetDeclaredSymbol(node) as ITypeParameterSymbol;
+        ISymbol? parentSymbol = typeParameterSymbol?.ContainingSymbol;
+        RegisterNodeIfNotNull(node, typeParameterSymbol, parentSymbol, NodeType.TypeParameter);
+
+        if (typeParameterSymbol != null)
+        {
+            foreach (var constraint in typeParameterSymbol.ConstraintTypes)
+            {
+                RegisterEdgeIfNotNull(node, typeParameterSymbol, constraint, EdgeType.TemplateParameter);
+            }
+        }
 
         base.VisitTypeParameter(node);
     }
@@ -373,6 +397,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
                               ISymbol? nodeSymbol,
                               ISymbol? parent,
                               NodeType nodeType,
+                              int cyclomaticComplexity = 0,
                               [CallerFilePath] string sourceFile = "",
                               [CallerMemberName] string method = "",
                               [CallerLineNumber] int lineNumber = 0)
@@ -383,7 +408,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             if (!_result.IsNodeRegistered(nodeSymbol))
             {
-                _result.RegisterNode(nodeSymbol, parent, nodeType, node);
+                _result.RegisterNode(nodeSymbol, parent, nodeType, node, cyclomaticComplexity);
             }
             success = true;
         }
@@ -447,5 +472,32 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             _result.RegisterEdge(symbol, iface, EdgeType.Implements);
         }
+    }
+
+    private int CalculateCyclomaticComplexity(MethodDeclarationSyntax node)
+    {
+        int cyclomaticComplexity = 1;
+
+        var cfg = ControlFlowGraph.Create(node, _semanticModel);
+        if (cfg != null)
+        {
+            int nodes = cfg.Blocks.Length;
+            int edges = 0;
+
+            foreach (var block in cfg.Blocks)
+            {
+                if (block.ConditionalSuccessor?.Destination != null)
+                    edges++;
+
+                if (block.FallThroughSuccessor?.Destination != null)
+                    edges++;
+            }
+
+            int p = 1; // assume 1 connected component for a method
+            cyclomaticComplexity = edges - nodes + (2 * p);
+        }
+
+
+        return cyclomaticComplexity;
     }
 }

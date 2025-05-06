@@ -21,6 +21,6 @@
         HandlEvent,
         TypeUsage,
         InheritsFrom,
-        Type,
+        Constraint,
     }
 }
