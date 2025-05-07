@@ -20,5 +20,9 @@ The following information was used as inputb for the development of te code:
 
 Under development. Not stable version is available yet.
 
+# To view AST
+
+https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/syntax-visualizer?tabs=csharp
+
 
 

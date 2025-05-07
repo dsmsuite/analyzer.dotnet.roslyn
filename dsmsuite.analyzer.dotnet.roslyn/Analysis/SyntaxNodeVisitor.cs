@@ -122,7 +122,15 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
 
 
     //// Type Names
-    //public override void VisitIdentifierName(IdentifierNameSyntax node) => RegisterTypeReference(node);
+    public override void VisitIdentifierName(IdentifierNameSyntax node)
+    { 
+        var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+        var context = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+        RegisterEdgeIfNotNull(node, context, symbol, EdgeType.TypeUsage);
+
+        base.VisitIdentifierName(node);
+    }
+
     //public override void VisitQualifiedName(QualifiedNameSyntax node) => RegisterTypeReference(node);
     //public override void VisitGenericName(GenericNameSyntax node) => RegisterTypeReference(node);
     //public override void VisitPredefinedType(PredefinedTypeSyntax node) => RegisterTypeReference(node);
@@ -209,10 +217,10 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as ILocalSymbol;
             ISymbol? parentSymbol = variableSymbol?.ContainingSymbol;
-            RegisterNodeIfNotNull(variableNode, variableSymbol, parentSymbol, NodeType.Variable); //  Line=212 Failed=36/59
+            RegisterNodeIfNotNull(variableNode, variableSymbol, parentSymbol, NodeType.Variable); //   Line=218 Failed=26/59
 
             ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
-            RegisterEdgeIfNotNull(variableNode, parentSymbol, typeSymbol, EdgeType.VariableType); // Line=215 Failed=36/59
+            RegisterEdgeIfNotNull(variableNode, parentSymbol, typeSymbol, EdgeType.VariableType); // Line=221 Failed=26/59
         }
 
         base.VisitVariableDeclaration(node);
@@ -249,12 +257,16 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             if (callee.MethodKind == MethodKind.DelegateInvoke)
             {
-                IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Expression).Symbol as IEventSymbol;
-                RegisterEdgeIfNotNull(node, caller, eventSymbol, EdgeType.TriggerEvent); //Line=253 Failed=1/1
+                // TODO: Implement
             }
             else
             {
                 RegisterEdgeIfNotNull(node, caller, callee, EdgeType.Call);
+
+                if (callee.IsOverride && callee.OverriddenMethod != null)
+                {
+                    RegisterNodeIfNotNull(node, callee, callee.OverriddenMethod, EdgeType.Overrride);
+                }
             }
         }
         base.VisitInvocationExpression(node);
