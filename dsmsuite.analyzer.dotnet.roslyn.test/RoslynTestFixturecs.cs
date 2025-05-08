@@ -39,9 +39,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             SyntaxTree tree = CSharpSyntaxTree.ParseText(code);
             SyntaxNode root = tree.GetRoot();
 
+            Guid guid = Guid.NewGuid();
             PortableExecutableReference mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
             CSharpCompilation compilation = CSharpCompilation.Create(
-                "Analysis",
+                $"Analysis_{guid}",
                 syntaxTrees: new[] { tree },
                 references: new[] { mscorlib });
 
