@@ -14,14 +14,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private int _nodeTypeIndex = 0;
         private int _edgeTypeIndex = 0;
         private readonly Dictionary<string, int> _filenameIds = [];
-        private readonly Dictionary<ISymbol, Node> _nodes = [];
-        private readonly List<Edge> _edges = [];
+        private readonly Dictionary<ISymbol, SymbolNode> _nodes = [];
+        private readonly List<SymbolEdge> _edges = [];
         private readonly Dictionary<NodeType, int> _nodeTypeIds = [];
         private readonly Dictionary<EdgeType, int> _edgeTypeIds = [];
-
-        public IDictionary<NodeType, int> NodeTypes => _nodeTypeIds;
-        public IDictionary<EdgeType, int> EdgeTypes => _edgeTypeIds;
-        public IEnumerable<INode> Nodes => _nodes.Values;
 
         public bool IsNodeRegistered(ISymbol symbol)
         {
@@ -71,7 +67,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         public int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)
         {
             _nodeIndex++;
-            Node node = new Node(_nodeIndex, symbol, parent, syntaxNode, nodeType, cyclomaticComplexity);
+            SymbolNode node = new SymbolNode(_nodeIndex, symbol, parent, syntaxNode, nodeType, cyclomaticComplexity);
             _nodes[symbol] = node;
 
             RegisterNodeType(nodeType);
@@ -84,7 +80,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         {
             _edgeIndex++;
 
-            _edges.Add(new Edge(_edgeIndex, source, target, edgeType));
+            _edges.Add(new SymbolEdge(_edgeIndex, source, target, edgeType));
 
             RegisterEdgeType(edgeType);
 
@@ -111,7 +107,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 graphRepository.SaveSourceFilename(keyValuePair.Value, keyValuePair.Key);
             }
 
-            foreach (Node node in _nodes.Values)
+            foreach (SymbolNode node in _nodes.Values)
             {
                 int? filenameId = _filenameIds[node.Filename];
                 int? nodeTypeId = _nodeTypeIds[node.NodeType];
@@ -131,7 +127,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 }
             }
 
-            foreach (Edge edge in _edges)
+            foreach (SymbolEdge edge in _edges)
             {
                 if (!_nodes.ContainsKey(edge.Source))
                 {
@@ -144,8 +140,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 else
                 {
 
-                    Node sourceNode = _nodes[edge.Source];
-                    Node targetNode = _nodes[edge.Target];
+                    SymbolNode sourceNode = _nodes[edge.Source];
+                    SymbolNode targetNode = _nodes[edge.Target];
                     int? edgeTypeId = _edgeTypeIds[edge.EdgeType];
                     if (edgeTypeId != null)
                     {

@@ -3,14 +3,14 @@ using Microsoft.CodeAnalysis;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
 {
-    public class Edge : IEdge
+    public class SymbolEdge
     {
         private int _id;
         private ISymbol _source;
         private ISymbol _target;
         private EdgeType _edgeType;
 
-        public Edge(int id, ISymbol source, ISymbol target, EdgeType edgeType)
+        public SymbolEdge(int id, ISymbol source, ISymbol target, EdgeType edgeType)
         {
             _id = id;
             _source = source;
