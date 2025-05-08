@@ -14,12 +14,58 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private int _nodeTypeIndex = 0;
         private int _edgeTypeIndex = 0;
         private readonly Dictionary<string, int> _filenameIds = [];
-        private readonly Dictionary<ISymbol, SymbolNode> _nodes = [];
-        private readonly List<SymbolEdge> _edges = [];
+        private readonly Dictionary<ISymbol, RegisteredSymbol> _nodes = [];
+        private readonly List<RegisteredSymbolEdge> _edges = [];
         private readonly Dictionary<NodeType, int> _nodeTypeIds = [];
         private readonly Dictionary<EdgeType, int> _edgeTypeIds = [];
 
-        public bool IsNodeRegistered(ISymbol symbol)
+        public bool RegisterNodeIfNotNull(SyntaxNode node,
+                           ISymbol? nodeSymbol,
+                           ISymbol? parent,
+                           NodeType nodeType,
+                           int cyclomaticComplexity = 0,
+                           [CallerFilePath] string sourceFile = "",
+                           [CallerMemberName] string method = "",
+                           [CallerLineNumber] int lineNumber = 0)
+        {
+            bool success = false;
+            string actionDescription = $"Parse node={nodeType}";
+            if (nodeSymbol != null)
+            {
+                if (!IsNodeRegistered(nodeSymbol))
+                {
+                    RegisterNode(nodeSymbol, parent, nodeType, node, cyclomaticComplexity);
+                }
+                success = true;
+            }
+
+            RegisterResult(actionDescription, node, success, sourceFile, method, lineNumber);
+            return success;
+        }
+
+        public bool RegisterEdgeIfNotNull(SyntaxNode node,
+                                   ISymbol? edgeSource,
+                                   ISymbol? edgeTarget,
+                                   EdgeType edgeType,
+                                   [CallerFilePath] string sourceFile = "",
+                                   [CallerMemberName] string method = "",
+                                   [CallerLineNumber] int lineNumber = 0)
+        {
+            bool success = false;
+            string actionDescription = $"Parse edge={edgeType}";
+
+            if (edgeSource != null && edgeTarget != null)
+            {
+                RegisterEdge(edgeSource, edgeTarget, edgeType);
+                success = true;
+            }
+
+            RegisterResult(actionDescription, node, success, sourceFile, method, lineNumber);
+
+            return success;
+        }
+
+        private bool IsNodeRegistered(ISymbol symbol)
         {
             return _nodes.ContainsKey(symbol);
         }
@@ -51,7 +97,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             }
         }
 
-        public void RegisterResult(string actionDescription,
+        private void RegisterResult(string actionDescription,
                                    SyntaxNode syntaxNode,
                                    bool success,
                                    [CallerFilePath] string sourceFile = "",
@@ -64,10 +110,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             Logger.LogResult(actionDescription, syntaxNodeFilename, syntaxNodeline, success, sourceFile, method, lineNumber);
         }
 
-        public int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)
+        private int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)
         {
             _nodeIndex++;
-            SymbolNode node = new SymbolNode(_nodeIndex, symbol, parent, syntaxNode, nodeType, cyclomaticComplexity);
+            RegisteredSymbol node = new RegisteredSymbol(_nodeIndex, symbol, parent, syntaxNode, nodeType, cyclomaticComplexity);
             _nodes[symbol] = node;
 
             RegisterNodeType(nodeType);
@@ -76,17 +122,16 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             return _nodeIndex;
         }
 
-        public int? RegisterEdge(ISymbol source, ISymbol target, EdgeType edgeType)
+        private int? RegisterEdge(ISymbol source, ISymbol target, EdgeType edgeType)
         {
             _edgeIndex++;
 
-            _edges.Add(new SymbolEdge(_edgeIndex, source, target, edgeType));
+            _edges.Add(new RegisteredSymbolEdge(_edgeIndex, source, target, edgeType));
 
             RegisterEdgeType(edgeType);
 
             return null;
         }
-
 
         public void Save(IGraphRepository graphRepository)
         {
@@ -107,7 +152,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 graphRepository.SaveSourceFilename(keyValuePair.Value, keyValuePair.Key);
             }
 
-            foreach (SymbolNode node in _nodes.Values)
+            foreach (RegisteredSymbol node in _nodes.Values)
             {
                 int? filenameId = _filenameIds[node.Filename];
                 int? nodeTypeId = _nodeTypeIds[node.NodeType];
@@ -127,7 +172,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 }
             }
 
-            foreach (SymbolEdge edge in _edges)
+            foreach (RegisteredSymbolEdge edge in _edges)
             {
                 if (!_nodes.ContainsKey(edge.Source))
                 {
@@ -140,8 +185,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 else
                 {
 
-                    SymbolNode sourceNode = _nodes[edge.Source];
-                    SymbolNode targetNode = _nodes[edge.Target];
+                    RegisteredSymbol sourceNode = _nodes[edge.Source];
+                    RegisteredSymbol targetNode = _nodes[edge.Target];
                     int? edgeTypeId = _edgeTypeIds[edge.EdgeType];
                     if (edgeTypeId != null)
                     {
