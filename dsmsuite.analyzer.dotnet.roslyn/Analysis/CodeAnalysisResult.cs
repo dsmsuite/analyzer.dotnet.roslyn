@@ -156,15 +156,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
             {
                 int? filenameId = _filenameIds[node.Filename];
                 int? nodeTypeId = _nodeTypeIds[node.NodeType];
-                int? parentId = null;
 
-                if (node.ParentSymbol != null)
+                if (node.ParentSymbol != null && _nodes.ContainsKey(node.ParentSymbol))
                 {
-                    if (_nodes.ContainsKey(node.ParentSymbol))
-                    {
-                        RegisteredNode parent = _nodes[node.ParentSymbol];
-                        parent.InsertChildAtEnd(node);
-                    }
+                    RegisteredNode parent = _nodes[node.ParentSymbol];
+                    parent.InsertChildAtEnd(node);
+                }
+                else
+                {
+                    // TODO: Register as root element
                 }
 
                 if (filenameId != null && nodeTypeId != null)
