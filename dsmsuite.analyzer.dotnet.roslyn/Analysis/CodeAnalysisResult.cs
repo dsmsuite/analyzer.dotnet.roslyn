@@ -14,8 +14,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private int _nodeTypeIndex = 0;
         private int _edgeTypeIndex = 0;
         private readonly Dictionary<string, int> _filenameIds = [];
-        private readonly Dictionary<ISymbol, RegisteredSymbol> _nodes = [];
-        private readonly List<RegisteredSymbolEdge> _edges = [];
+        private readonly Dictionary<ISymbol, RegisteredNode> _nodes = [];
+        private readonly List<RegisteredEdge> _edges = [];
         private readonly Dictionary<NodeType, int> _nodeTypeIds = [];
         private readonly Dictionary<EdgeType, int> _edgeTypeIds = [];
 
@@ -113,7 +113,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private int? RegisterNode(ISymbol symbol, ISymbol? parent, NodeType nodeType, SyntaxNode syntaxNode, int cyclomaticComplexity)
         {
             _nodeIndex++;
-            RegisteredSymbol node = new RegisteredSymbol(_nodeIndex, symbol, parent, syntaxNode, nodeType, cyclomaticComplexity);
+            RegisteredNode node = new RegisteredNode(_nodeIndex, symbol, parent, syntaxNode, nodeType, cyclomaticComplexity);
             _nodes[symbol] = node;
 
             RegisterNodeType(nodeType);
@@ -126,7 +126,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         {
             _edgeIndex++;
 
-            _edges.Add(new RegisteredSymbolEdge(_edgeIndex, source, target, edgeType));
+            _edges.Add(new RegisteredEdge(_edgeIndex, source, target, edgeType));
 
             RegisterEdgeType(edgeType);
 
@@ -152,17 +152,18 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 graphRepository.SaveSourceFilename(keyValuePair.Value, keyValuePair.Key);
             }
 
-            foreach (RegisteredSymbol node in _nodes.Values)
+            foreach (RegisteredNode node in _nodes.Values)
             {
                 int? filenameId = _filenameIds[node.Filename];
                 int? nodeTypeId = _nodeTypeIds[node.NodeType];
                 int? parentId = null;
 
-                if (node.Parent != null)
+                if (node.ParentSymbol != null)
                 {
-                    if (_nodes.ContainsKey(node.Parent))
+                    if (_nodes.ContainsKey(node.ParentSymbol))
                     {
-                        parentId = _nodes[node.Parent].Id;
+                        RegisteredNode parent = _nodes[node.ParentSymbol];
+                        parent.InsertChildAtEnd(node);
                     }
                 }
 
@@ -172,25 +173,25 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                 }
             }
 
-            foreach (RegisteredSymbolEdge edge in _edges)
+            foreach (RegisteredEdge edge in _edges)
             {
-                if (!_nodes.ContainsKey(edge.Source))
+                if (!_nodes.ContainsKey(edge.SourceSymbol))
                 {
                     //Console.WriteLine($"Edge source not found: {source.Name}");
                 }
-                else if (!_nodes.ContainsKey(edge.Target))
+                else if (!_nodes.ContainsKey(edge.TargetSymbol))
                 {
                     //Console.WriteLine($"Edge target not found: {target.Name}");
                 }
                 else
                 {
+                    edge.Source = _nodes[edge.SourceSymbol];
+                    edge.Target = _nodes[edge.TargetSymbol];
 
-                    RegisteredSymbol sourceNode = _nodes[edge.Source];
-                    RegisteredSymbol targetNode = _nodes[edge.Target];
                     int? edgeTypeId = _edgeTypeIds[edge.EdgeType];
                     if (edgeTypeId != null)
                     {
-                        graphRepository.SaveEdge(edge.Id, sourceNode.Id, targetNode.Id, edgeTypeId.Value, 1);
+                        graphRepository.SaveEdge(edge.Id, edge.Source.Id, edge.Target.Id, edgeTypeId.Value, 1);
                     }
                 }
             }

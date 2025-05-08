@@ -2,7 +2,9 @@
 {
     public interface IEdge
     {
-        EdgeType EdgeType { get; }
         int Id { get; }
+        EdgeType EdgeType { get; }
+        INode? Source { get; }
+        INode? Target { get; }
     }
 }
