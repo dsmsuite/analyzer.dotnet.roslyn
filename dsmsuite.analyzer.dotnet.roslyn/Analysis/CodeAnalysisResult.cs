@@ -19,6 +19,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private readonly Dictionary<NodeType, int> _nodeTypeIds = [];
         private readonly Dictionary<EdgeType, int> _edgeTypeIds = [];
 
+        public IDictionary<NodeType, int> NodeTypes => _nodeTypeIds;
+        public IDictionary<EdgeType, int> EdgeTypes => _edgeTypeIds;
+        public IEnumerable<INode> Nodes => _nodes.Values;
 
         public bool IsNodeRegistered(ISymbol symbol)
         {

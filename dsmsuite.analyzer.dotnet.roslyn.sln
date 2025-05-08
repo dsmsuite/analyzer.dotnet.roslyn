@@ -5,6 +5,8 @@ VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsmsuite.analyzer.dotnet.roslyn", "dsmsuite.analyzer.dotnet.roslyn\dsmsuite.analyzer.dotnet.roslyn.csproj", "{3A127978-88BD-4437-B789-E8CD8CCD314B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dsmsuite.analyzer.dotnet.roslyn.test", "dsmsuite.analyzer.dotnet.roslyn.test\dsmsuite.analyzer.dotnet.roslyn.test.csproj", "{20E9A852-B209-4162-8708-BE45C691A3D3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,8 +17,15 @@ Global
 		{3A127978-88BD-4437-B789-E8CD8CCD314B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A127978-88BD-4437-B789-E8CD8CCD314B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A127978-88BD-4437-B789-E8CD8CCD314B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{20E9A852-B209-4162-8708-BE45C691A3D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{20E9A852-B209-4162-8708-BE45C691A3D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{20E9A852-B209-4162-8708-BE45C691A3D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{20E9A852-B209-4162-8708-BE45C691A3D3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {927CDAF3-7114-4D4D-91F6-3C5DFECD8152}
 	EndGlobalSection
 EndGlobal

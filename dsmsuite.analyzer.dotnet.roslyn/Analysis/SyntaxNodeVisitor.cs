@@ -265,7 +265,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
 
                 if (callee.IsOverride && callee.OverriddenMethod != null)
                 {
-                    RegisterNodeIfNotNull(node, callee, callee.OverriddenMethod, EdgeType.Overrride);
+                    RegisterEdgeIfNotNull(node, callee, callee.OverriddenMethod, EdgeType.Overrride);
                 }
             }
         }
