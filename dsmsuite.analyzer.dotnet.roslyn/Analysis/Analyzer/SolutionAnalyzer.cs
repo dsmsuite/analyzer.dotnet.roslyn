@@ -1,17 +1,27 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Data;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
+using dsmsuite.analyzer.dotnet.roslyn.Data;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
 
 
-namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
+namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
 {
     public class SolutionAnalyzer : ICodeAnalyzer
     {
-        public async Task AnalyzeAsync(string InputPath, IGraphRepository graphRepository)
+        private readonly string _solutionPath;
+        private readonly IResultCollector _results;
+
+        public SolutionAnalyzer(string solutionPath, IResultCollector results)
         {
-            CodeAnalysisResult codeAnalysisResult = new CodeAnalysisResult();
+            _solutionPath = solutionPath;
+            _results = results;
+        }
+
+        public async Task AnalyzeAsync()
+        {
             MSBuildWorkspace workspace = MSBuildWorkspace.Create();
-            Solution solution = await workspace.OpenSolutionAsync(InputPath);
+            Solution solution = await workspace.OpenSolutionAsync(_solutionPath);
 
             foreach (Project project in solution.Projects)
             {
@@ -33,7 +43,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                                     SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
 
                                     SyntaxNode root = await syntaxTree.GetRootAsync();
-                                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, codeAnalysisResult);
+                                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, _results);
                                     visitor.Visit(root);
                                 }
                             }
@@ -41,8 +51,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
                     }
                 }
             }
-
-            codeAnalysisResult.Save(graphRepository);
         }
     }
 }

@@ -2,9 +2,9 @@
 using Microsoft.CodeAnalysis;
 using System.Configuration;
 
-namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
+namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public class RegisteredNode : INode
+    public class Node : INode
     {
         private int _id;
         private ISymbol _symbol;
@@ -15,7 +15,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         private readonly List<INode> _children;
         private INode? _parent;
 
-        public RegisteredNode(int id, ISymbol symbol, ISymbol? parentSymbol, SyntaxNode syntaxNode, NodeType nodeType, int cyclomaticComplexity)
+        public Node(int id, ISymbol symbol, ISymbol? parentSymbol, SyntaxNode syntaxNode, NodeType nodeType, int cyclomaticComplexity)
         {
             _id = id;
             _symbol = symbol;
@@ -63,7 +63,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
         public void InsertChildAtEnd(INode child)
         {
             _children.Add(child);
-            RegisteredNode c = child as RegisteredNode;
+            Node c = child as Node;
             if (c != null)
             {
                 c._parent = this;

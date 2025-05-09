@@ -1,4 +1,5 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
@@ -34,25 +35,31 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
 
         public static void Analyz2(string file)
         {
+            SyntaxTree tree = CreateSyntaxTree(file);
+            SemanticModel semanticModel = CreateSemanticModel(tree);
+            ResultReporter reporter = new ResultReporter();
+            ResultCollector result = new ResultCollector(reporter);
+            SyntaxNodeVisitor walker = new SyntaxNodeVisitor(semanticModel, result);
+            walker.Visit(tree.GetRoot());
+
+            //Assert.IsTrue(result.EdgeTypes.Count >  0);
+        }
+
+        private static SyntaxTree CreateSyntaxTree(string file)
+        {
             string code = File.ReadAllText(file);
+            return CSharpSyntaxTree.ParseText(code);
+        }
 
-            SyntaxTree tree = CSharpSyntaxTree.ParseText(code);
-            SyntaxNode root = tree.GetRoot();
-
+        private static SemanticModel CreateSemanticModel(SyntaxTree tree)
+        {
             Guid guid = Guid.NewGuid();
             PortableExecutableReference mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"Analysis_{guid}",
                 syntaxTrees: new[] { tree },
                 references: new[] { mscorlib });
-
-            SemanticModel semanticModel = compilation.GetSemanticModel(tree);
-
-            CodeAnalysisResult result = new CodeAnalysisResult();
-            SyntaxNodeVisitor walker = new SyntaxNodeVisitor(semanticModel, result);
-            walker.Visit(root);
-
-            //Assert.IsTrue(result.EdgeTypes.Count >  0);
+            return compilation.GetSemanticModel(tree);
         }
     }
 }

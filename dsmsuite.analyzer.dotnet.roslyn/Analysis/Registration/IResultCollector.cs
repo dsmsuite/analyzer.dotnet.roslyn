@@ -3,12 +3,10 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace dsmsuite.analyzer.dotnet.roslyn.Analysis
+namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public interface ICodeAnalysisResult
+    public interface IResultCollector
     {
-        void Save(IGraphRepository graphRepository);
-
         public bool RegisterNodeIfNotNull(SyntaxNode node,
                    ISymbol? nodeSymbol,
                    ISymbol? parent,

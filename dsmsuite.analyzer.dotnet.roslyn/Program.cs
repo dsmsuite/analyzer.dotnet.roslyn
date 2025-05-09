@@ -1,8 +1,10 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer;
 using dsmsuite.analyzer.dotnet.roslyn.Data;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 
 Logger.Init(Assembly.GetExecutingAssembly(), true);
 Logger.LogLevel = LogLevel.Error;
@@ -43,16 +45,13 @@ if (outputFileFileInfo.Exists)
 var services = new ServiceCollection();
 
 // Register dependencies
-services.AddSingleton<ICodeAnalyzer, SolutionAnalyzer>();
-services.AddSingleton<IGraphRepository>(provider => new SqliteGraphRepository(outputFileFileInfo.FullName));
+ResultReporter resultReporter = new ResultReporter();
+ResultCollector resultCollector = new ResultCollector(resultReporter);
+SolutionAnalyzer analyzer = new SolutionAnalyzer(solutionFileInfo.FullName, resultCollector);
+await analyzer.AnalyzeAsync();
 
-var serviceProvider = services.BuildServiceProvider();
-
-var analyzer = serviceProvider.GetRequiredService<ICodeAnalyzer>();
-var repository = serviceProvider.GetRequiredService<IGraphRepository>();
-
-Console.WriteLine($"Analyzing code at: {solutionFileInfo.FullName}");
-await analyzer.AnalyzeAsync(solutionFileInfo.FullName, repository);
+SqliteGraphRepository sqliteGraphRepository = new SqliteGraphRepository(outputFileFileInfo.FullName);
+//sqliteGraphRepository.SaveNode(resultCollector.Graph);
 
 Logger.LogUserMessage("Done.");
 Logger.Flush();

@@ -1,4 +1,4 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -11,9 +11,9 @@ using System.Xml.Linq;
 public class SyntaxNodeVisitor : CSharpSyntaxWalker
 {
     private readonly SemanticModel _semanticModel;
-    private readonly ICodeAnalysisResult _result;
+    private readonly IResultCollector _result;
 
-    public SyntaxNodeVisitor(SemanticModel semanticModel, ICodeAnalysisResult result)
+    public SyntaxNodeVisitor(SemanticModel semanticModel, IResultCollector result)
         : base(SyntaxWalkerDepth.Token)
     {
         _semanticModel = semanticModel;
