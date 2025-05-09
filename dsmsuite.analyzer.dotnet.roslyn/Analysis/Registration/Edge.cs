@@ -24,6 +24,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         public EdgeType EdgeType => _edgeType;
 
         public INode? Source { get; set; }
-        public INode? Target { get; set;  }
+        public INode? Target { get; set; }
     }
 }

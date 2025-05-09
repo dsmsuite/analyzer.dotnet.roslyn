@@ -1,10 +1,10 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
 using dsmsuite.analyzer.dotnet.roslyn.Data;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
-using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
-using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 
 Logger.Init(Assembly.GetExecutingAssembly(), true);
 Logger.LogLevel = LogLevel.Error;

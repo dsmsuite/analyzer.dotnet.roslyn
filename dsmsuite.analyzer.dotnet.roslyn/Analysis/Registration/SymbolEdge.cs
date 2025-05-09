@@ -1,16 +1,11 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public class RegisteredSymbolEdge
+    public class SymbolEdge
     {
-        public RegisteredSymbolEdge(int id, ISymbol source, ISymbol target, EdgeType edgeType)
+        public SymbolEdge(int id, ISymbol source, ISymbol target, EdgeType edgeType)
         {
             Id = id;
             SourceSymbol = source;
@@ -23,7 +18,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         public ISymbol TargetSymbol { get; }
         public EdgeType EdgeType { get; }
 
-        public RegisteredSymbolNode SourceNode { get; set; }
-        public RegisteredSymbolNode TargetNode { get; set; }
+        public SymbolNode SourceNode { get; set; }
+        public SymbolNode TargetNode { get; set; }
     }
 }

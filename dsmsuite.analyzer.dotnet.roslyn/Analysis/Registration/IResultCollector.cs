@@ -1,5 +1,4 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Data;
-using dsmsuite.analyzer.dotnet.roslyn.Graph;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using System.Runtime.CompilerServices;
 

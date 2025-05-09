@@ -1,21 +1,16 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public class RegisteredSymbolNode
+    public class SymbolNode
     {
-        private readonly List<RegisteredSymbolNode> _children;
-        private RegisteredSymbolNode? _parent;
+        private readonly List<SymbolNode> _children;
+        private SymbolNode? _parent;
 
-        public RegisteredSymbolNode(int id, ISymbol symbol, ISymbol? parentSymbol, SyntaxNode syntaxNode, NodeType nodeType, int cyclomaticComplexity)
+        public SymbolNode(int id, ISymbol symbol, ISymbol? parentSymbol, SyntaxNode syntaxNode, NodeType nodeType, int cyclomaticComplexity)
         {
-            _children = new List<RegisteredSymbolNode>();
+            _children = new List<SymbolNode>();
             _parent = null;
 
             Id = id;
@@ -33,7 +28,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         public NodeType NodeType;
         public int CyclomaticComplexity;
 
-        public void InsertChildAtEnd(RegisteredSymbolNode child)
+        public void InsertChildAtEnd(SymbolNode child)
         {
             _children.Add(child);
             if (child != null)

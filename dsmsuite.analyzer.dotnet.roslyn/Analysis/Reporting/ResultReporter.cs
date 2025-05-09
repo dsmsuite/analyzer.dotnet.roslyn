@@ -6,8 +6,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting
     {
         public void ReportResult(string actionDescription,
                             string syntaxNodeFilename,
-                            int    syntaxNodeline,
-                            bool   success,
+                            int syntaxNodeline,
+                            bool success,
                             string sourceFile,
                             string method,
                             int lineNumber)

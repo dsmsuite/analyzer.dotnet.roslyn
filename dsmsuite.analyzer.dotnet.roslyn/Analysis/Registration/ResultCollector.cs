@@ -1,7 +1,5 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
-using dsmsuite.analyzer.dotnet.roslyn.Data;
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
-using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -14,8 +12,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         private int _nodeIndex = 0;
         private int _edgeIndex = 0;
 
-        private readonly Dictionary<ISymbol, RegisteredSymbolNode> _symbolNodes = [];
-        private readonly List<RegisteredSymbolEdge> _symbolEdges = [];
+        private readonly Dictionary<ISymbol, SymbolNode> _symbolNodes = [];
+        private readonly List<SymbolEdge> _symbolEdges = [];
 
         public ResultCollector(IResultReporter reporter)
         {
@@ -37,7 +35,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                 if (!IsSymbolNodeRegistered(nodeSymbol))
                 {
                     _nodeIndex++;
-                    _symbolNodes[nodeSymbol] = new RegisteredSymbolNode(_nodeIndex, nodeSymbol, parent, node, nodeType, cyclomaticComplexity); ;
+                    _symbolNodes[nodeSymbol] = new SymbolNode(_nodeIndex, nodeSymbol, parent, node, nodeType, cyclomaticComplexity); ;
                 }
                 success = true;
             }
@@ -60,7 +58,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             if (edgeSource != null && edgeTarget != null)
             {
                 _edgeIndex++;
-                _symbolEdges.Add(new RegisteredSymbolEdge(_edgeIndex, edgeSource, edgeTarget, edgeType));
+                _symbolEdges.Add(new SymbolEdge(_edgeIndex, edgeSource, edgeTarget, edgeType));
                 success = true;
             }
 
@@ -90,12 +88,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
         public IGraph? BuildHierarchicalGraph()
         {
-            List<RegisteredSymbolNode> rootSymbolNodes = new List<RegisteredSymbolNode>();
+            List<SymbolNode> rootSymbolNodes = new List<SymbolNode>();
 
-            foreach (RegisteredSymbolNode symbolNode in _symbolNodes.Values)
+            foreach (SymbolNode symbolNode in _symbolNodes.Values)
             {
-   
-                RegisteredSymbolNode parent = null;
+
+                SymbolNode parent = null;
 
                 if (symbolNode.ParentSymbol != null && _symbolNodes.ContainsKey(symbolNode.ParentSymbol))
                 {
@@ -108,7 +106,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                 }
             }
 
-            foreach (RegisteredSymbolEdge edge in _symbolEdges)
+            foreach (SymbolEdge edge in _symbolEdges)
             {
                 if (!_symbolNodes.ContainsKey(edge.SourceSymbol))
                 {

@@ -4,9 +4,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FlowAnalysis;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 
 public class SyntaxNodeVisitor : CSharpSyntaxWalker
 {
@@ -123,7 +120,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
 
     //// Type Names
     public override void VisitIdentifierName(IdentifierNameSyntax node)
-    { 
+    {
         var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
         var context = _semanticModel.GetEnclosingSymbol(node.SpanStart);
         _result.RegisterEdgeIfNotNull(node, context, symbol, EdgeType.TypeUsage);
@@ -182,14 +179,14 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     }
 
     // Property Declarations
-    public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node) 
+    public override void VisitPropertyDeclaration(PropertyDeclarationSyntax node)
     {
         IPropertySymbol? propertySymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = propertySymbol?.ContainingSymbol;
         _result.RegisterNodeIfNotNull(node, propertySymbol, parentSymbol, NodeType.Property);
 
         ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
-        _result.RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.PropertyType); 
+        _result.RegisterEdgeIfNotNull(node, parentSymbol, typeSymbol, EdgeType.PropertyType);
 
         base.VisitPropertyDeclaration(node);
     }
@@ -405,7 +402,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //}
 
     //// Helper Methods
- 
+
 
     //private void RegisterTypeReference(TypeSyntax node,
     //                                [CallerFilePath] string sourceFile = "",
