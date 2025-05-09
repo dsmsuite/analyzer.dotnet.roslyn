@@ -46,7 +46,7 @@ var services = new ServiceCollection();
 
 // Register dependencies
 ResultReporter resultReporter = new ResultReporter();
-ResultCollector resultCollector = new ResultCollector(resultReporter);
+CodeAnalysisResult resultCollector = new CodeAnalysisResult(resultReporter);
 SolutionAnalyzer analyzer = new SolutionAnalyzer(solutionFileInfo.FullName, resultCollector);
 await analyzer.AnalyzeAsync();
 

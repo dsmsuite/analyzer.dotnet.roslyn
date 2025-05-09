@@ -8,9 +8,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
     public class SolutionAnalyzer : ICodeAnalyzer
     {
         private readonly string _solutionPath;
-        private readonly IResultCollector _results;
+        private readonly ICodeAnalysisResult _results;
 
-        public SolutionAnalyzer(string solutionPath, IResultCollector results)
+        public SolutionAnalyzer(string solutionPath, ICodeAnalysisResult results)
         {
             _solutionPath = solutionPath;
             _results = results;

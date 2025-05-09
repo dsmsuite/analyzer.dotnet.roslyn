@@ -5,22 +5,28 @@ using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public class ResultCollector : IResultCollector
+    public class CodeAnalysisResult : ICodeAnalysisResult
     {
         private readonly IResultReporter _reporter;
 
         private int _nodeIndex = 0;
         private int _edgeIndex = 0;
 
-        private readonly Dictionary<ISymbol, SymbolNode> _symbolNodes = [];
-        private readonly List<SymbolEdge> _symbolEdges = [];
+        private readonly List<UnresolvedEdge> _unresolvedEdges = [];
 
-        public ResultCollector(IResultReporter reporter)
+        private readonly Dictionary<ISymbol, Node> _nodes = [];
+        private readonly List<INode> _nodeHierarchy = [];
+        private readonly List<Edge> _edges = [];
+
+        public CodeAnalysisResult(IResultReporter reporter)
         {
             _reporter = reporter;
         }
 
-        public bool RegisterNodeIfNotNull(SyntaxNode node,
+        public IEnumerable<INode> NodeHierarchy => _nodeHierarchy;
+        public IEnumerable<IEdge> Edges => _edges;
+
+        public bool RegisterNode(SyntaxNode node,
                            ISymbol? nodeSymbol,
                            ISymbol? parent,
                            NodeType nodeType,
@@ -32,10 +38,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             bool success = false;
             if (nodeSymbol != null)
             {
-                if (!IsSymbolNodeRegistered(nodeSymbol))
+                if (!IsNodeRegistered(nodeSymbol))
                 {
                     _nodeIndex++;
-                    _symbolNodes[nodeSymbol] = new SymbolNode(_nodeIndex, nodeSymbol, parent, node, nodeType, cyclomaticComplexity); ;
+                    _nodes[nodeSymbol] = new Node(_nodeIndex, nodeSymbol, parent, node, nodeType, cyclomaticComplexity); ;
                 }
                 success = true;
             }
@@ -45,7 +51,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             return success;
         }
 
-        public bool RegisterEdgeIfNotNull(SyntaxNode node,
+        public bool RegisterEdge(SyntaxNode node,
                                    ISymbol? edgeSource,
                                    ISymbol? edgeTarget,
                                    EdgeType edgeType,
@@ -58,7 +64,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             if (edgeSource != null && edgeTarget != null)
             {
                 _edgeIndex++;
-                _symbolEdges.Add(new SymbolEdge(_edgeIndex, edgeSource, edgeTarget, edgeType));
+                _unresolvedEdges.Add(new UnresolvedEdge(_edgeIndex, edgeSource, edgeTarget, edgeType));
                 success = true;
             }
 
@@ -67,9 +73,39 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             return success;
         }
 
-        private bool IsSymbolNodeRegistered(ISymbol symbol)
+        public void BuildHierarchicalGraph()
         {
-            return _symbolNodes.ContainsKey(symbol);
+            _nodeHierarchy.Clear();
+
+            foreach (Node node in _nodes.Values)
+            {
+                Node? parentNode = null;
+
+                if (node.ParentSymbol != null && _nodes.ContainsKey(node.ParentSymbol))
+                {
+                    parentNode = _nodes[node.ParentSymbol];
+                    parentNode.InsertChildAtEnd(node);
+                }
+                else
+                {
+                    _nodeHierarchy.Add(node);
+                }
+            }
+
+            foreach (UnresolvedEdge unresolvedEdge in _unresolvedEdges)
+            {
+                if (_nodes.ContainsKey(unresolvedEdge.SourceSymbol) && _nodes.ContainsKey(unresolvedEdge.TargetSymbol))
+                {
+                    Node sourceNode = _nodes[unresolvedEdge.SourceSymbol];
+                    Node targetNode = _nodes[unresolvedEdge.TargetSymbol];
+                    _edges.Add(new Edge(unresolvedEdge.Id, sourceNode, targetNode, unresolvedEdge.EdgeType));
+                }
+            }
+        }
+
+        private bool IsNodeRegistered(ISymbol symbol)
+        {
+            return _nodes.ContainsKey(symbol);
         }
 
         private void RegisterResult(string actionDescription,
@@ -86,44 +122,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         }
 
 
-        public IGraph? BuildHierarchicalGraph()
-        {
-            List<SymbolNode> rootSymbolNodes = new List<SymbolNode>();
 
-            foreach (SymbolNode symbolNode in _symbolNodes.Values)
-            {
-
-                SymbolNode parent = null;
-
-                if (symbolNode.ParentSymbol != null && _symbolNodes.ContainsKey(symbolNode.ParentSymbol))
-                {
-                    parent = _symbolNodes[symbolNode.ParentSymbol];
-                    parent.InsertChildAtEnd(symbolNode);
-                }
-                else
-                {
-                    rootSymbolNodes.Add(symbolNode);
-                }
-            }
-
-            foreach (SymbolEdge edge in _symbolEdges)
-            {
-                if (!_symbolNodes.ContainsKey(edge.SourceSymbol))
-                {
-                    //Console.WriteLine($"Edge source not found: {source.Name}");
-                }
-                else if (!_symbolNodes.ContainsKey(edge.TargetSymbol))
-                {
-                    //Console.WriteLine($"Edge target not found: {target.Name}");
-                }
-                else
-                {
-                    edge.SourceNode = _symbolNodes[edge.SourceSymbol];
-                    edge.TargetNode = _symbolNodes[edge.TargetSymbol];
-                }
-            }
-
-            return null;
-        }
     }
 }

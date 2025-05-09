@@ -38,7 +38,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             SyntaxTree tree = CreateSyntaxTree(file);
             SemanticModel semanticModel = CreateSemanticModel(tree);
             ResultReporter reporter = new ResultReporter();
-            ResultCollector result = new ResultCollector(reporter);
+            CodeAnalysisResult result = new CodeAnalysisResult(reporter);
             SyntaxNodeVisitor walker = new SyntaxNodeVisitor(semanticModel, result);
             walker.Visit(tree.GetRoot());
 

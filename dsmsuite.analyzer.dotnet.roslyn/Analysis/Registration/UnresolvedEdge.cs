@@ -3,13 +3,13 @@ using Microsoft.CodeAnalysis;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public class SymbolEdge
+    public class UnresolvedEdge
     {
-        public SymbolEdge(int id, ISymbol source, ISymbol target, EdgeType edgeType)
+        public UnresolvedEdge(int id, ISymbol sourceSymbol, ISymbol targetSymbol, EdgeType edgeType)
         {
             Id = id;
-            SourceSymbol = source;
-            TargetSymbol = target;
+            SourceSymbol = sourceSymbol;
+            TargetSymbol = targetSymbol;
             EdgeType = edgeType;
         }
 
@@ -17,8 +17,5 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         public ISymbol SourceSymbol { get; }
         public ISymbol TargetSymbol { get; }
         public EdgeType EdgeType { get; }
-
-        public SymbolNode SourceNode { get; set; }
-        public SymbolNode TargetNode { get; set; }
     }
 }

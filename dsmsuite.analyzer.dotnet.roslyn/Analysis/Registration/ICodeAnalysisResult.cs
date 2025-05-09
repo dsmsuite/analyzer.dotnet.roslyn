@@ -4,9 +4,9 @@ using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public interface IResultCollector
+    public interface ICodeAnalysisResult
     {
-        public bool RegisterNodeIfNotNull(SyntaxNode node,
+        bool RegisterNode(SyntaxNode node,
                    ISymbol? nodeSymbol,
                    ISymbol? parent,
                    NodeType nodeType,
@@ -15,12 +15,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                    [CallerMemberName] string method = "",
                    [CallerLineNumber] int lineNumber = 0);
 
-        public bool RegisterEdgeIfNotNull(SyntaxNode node,
+        bool RegisterEdge(SyntaxNode node,
                            ISymbol? edgeSource,
                            ISymbol? edgeTarget,
                            EdgeType edgeType,
                            [CallerFilePath] string sourceFile = "",
                            [CallerMemberName] string method = "",
                            [CallerLineNumber] int lineNumber = 0);
+
+        IEnumerable<INode> NodeHierarchy { get; }
+        IEnumerable<IEdge> Edges { get; }
     }
 }
