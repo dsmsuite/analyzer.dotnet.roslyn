@@ -27,6 +27,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         }
 
         public ISymbol? ParentSymbol => _parentSymbol;
+
         public int Id => _id;
         public string Name => _symbol.Name;
         public NodeType NodeType => _nodeType;

@@ -3,7 +3,6 @@ using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
-using System.Threading.Tasks;
 
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
@@ -18,7 +17,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
             _solutionPath = solutionPath;
             hierarchicalGraph = new HierarchicalGraph(reporter);
         }
-        
+
         public IHierarchicalGraph AnalysisResult => hierarchicalGraph;
 
         public async Task AnalyzeAsync()
@@ -28,36 +27,42 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
 
             foreach (Project project in solution.Projects)
             {
-                if (project.FilePath != null)
+                await AnalyzeProject(project);
+            }
+        }
+
+        private async Task AnalyzeProject(Project project)
+        {
+            if (project.FilePath != null)
+            {
+                Console.WriteLine($"Processing project {project.FilePath}");
+
+                Compilation? compilation = await project.GetCompilationAsync();
+
+                if (compilation != null)
                 {
-                    Console.WriteLine($"Processing project {project.FilePath}");
-
-                    Compilation? compilation = await project.GetCompilationAsync();
-
-                    if (compilation != null)
+                    foreach (Document document in project.Documents)
                     {
-                        foreach (Document document in project.Documents)
-                        {
-                            if (document.FilePath != null)
-                            {
-                                SyntaxTree? syntaxTree = await document.GetSyntaxTreeAsync();
-                                if (syntaxTree != null)
-                                {
-                                    SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-
-                                    SyntaxNode root = await syntaxTree.GetRootAsync();
-                                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, hierarchicalGraph);
-                                    visitor.Visit(root);
-                                }
-                            }
-                        }
+                        await AnalyzeSourceFile(compilation, document);
                     }
                 }
             }
         }
 
-        public IEnumerable<INode> NodeHierarchy => hierarchicalGraph.NodeHierarchy;
-        public IEnumerable<IEdge> Edges => hierarchicalGraph.Edges;
+        private async Task AnalyzeSourceFile(Compilation compilation, Document document)
+        {
+            if (document.FilePath != null)
+            {
+                SyntaxTree? syntaxTree = await document.GetSyntaxTreeAsync();
+                if (syntaxTree != null)
+                {
+                    SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
+
+                    SyntaxNode root = await syntaxTree.GetRootAsync();
+                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, hierarchicalGraph);
+                    visitor.Visit(root);
+                }
+            }
+        }
     }
 }
-;

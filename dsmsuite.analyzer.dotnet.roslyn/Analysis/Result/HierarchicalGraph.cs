@@ -1,7 +1,6 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
@@ -10,8 +9,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
     {
         private readonly IResultReporter _reporter;
 
-        private int _nodeIndex = 0;
-        private int _edgeIndex = 0;
+        private int _nodeCount = 0;
+        private int _edgeCount = 0;
 
         private readonly List<UnresolvedEdge> _unresolvedEdges = [];
 
@@ -28,8 +27,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         public IEnumerable<IEdge> Edges => _edges;
 
         public bool AddNode(SyntaxNode node,
-                            ISymbol? nodeSymbol,
-                            ISymbol? parent,
+                            ISymbol? symbol,
+                            ISymbol? parentSymbol,
                             NodeType nodeType,
                             int cyclomaticComplexity = 0,
                             [CallerFilePath] string sourceFile = "",
@@ -37,12 +36,13 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                             [CallerLineNumber] int lineNumber = 0)
         {
             bool success = false;
-            if (nodeSymbol != null)
+
+            if (symbol != null)
             {
-                if (!IsNodeRegistered(nodeSymbol))
+                if (!IsNodeRegistered(symbol))
                 {
-                    _nodeIndex++;
-                    _nodes[nodeSymbol] = new Node(_nodeIndex, nodeSymbol, parent, node, nodeType, cyclomaticComplexity); ;
+                    _nodeCount++;
+                    _nodes[symbol] = new Node(_nodeCount, symbol, parentSymbol, node, nodeType, cyclomaticComplexity); ;
                 }
                 success = true;
             }
@@ -53,8 +53,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         }
 
         public bool AddEdge(SyntaxNode node,
-                            ISymbol? edgeSource,
-                            ISymbol? edgeTarget,
+                            ISymbol? sourceSymbol,
+                            ISymbol? targetSymbol,
                             EdgeType edgeType,
                             [CallerFilePath] string sourceFile = "",
                             [CallerMemberName] string method = "",
@@ -62,10 +62,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         {
             bool success = false;
 
-            if (edgeSource != null && edgeTarget != null)
+            if (sourceSymbol != null && targetSymbol != null)
             {
-                _edgeIndex++;
-                _unresolvedEdges.Add(new UnresolvedEdge(_edgeIndex, edgeSource, edgeTarget, edgeType));
+                _edgeCount++;
+                _unresolvedEdges.Add(new UnresolvedEdge(_edgeCount, sourceSymbol, targetSymbol, node, edgeType));
                 success = true;
             }
 
@@ -99,13 +99,13 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                 {
                     Node sourceNode = _nodes[unresolvedEdge.SourceSymbol];
                     Node targetNode = _nodes[unresolvedEdge.TargetSymbol];
-                    _edges.Add(new Edge(unresolvedEdge.Id, sourceNode, targetNode, unresolvedEdge.EdgeType));
+                    _edges.Add(new Edge(unresolvedEdge.Id, sourceNode, targetNode, unresolvedEdge.SyntaxNode, unresolvedEdge.EdgeType));
                 }
             }
         }
 
-        public int EdgeCount => _edgeIndex + 1;
-        public int NodeCount => _nodeIndex + 1;
+        public int EdgeCount => _edgeCount;
+        public int NodeCount => _nodeCount;
 
         private bool IsNodeRegistered(ISymbol symbol)
         {

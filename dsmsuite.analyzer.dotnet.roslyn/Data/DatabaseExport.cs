@@ -1,7 +1,6 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Data;
-using dsmsuite.analyzer.dotnet.roslyn.Graph;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
 
-namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Storage
+namespace dsmsuite.analyzer.dotnet.roslyn.Data
 {
     public class DatabaseExport
     {

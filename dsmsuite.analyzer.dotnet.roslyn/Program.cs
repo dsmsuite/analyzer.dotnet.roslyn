@@ -1,5 +1,4 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer;
-using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
 using dsmsuite.analyzer.dotnet.roslyn.Data;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
