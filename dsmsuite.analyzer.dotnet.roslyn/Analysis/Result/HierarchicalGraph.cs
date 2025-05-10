@@ -14,8 +14,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
         private readonly List<UnresolvedEdge> _unresolvedEdges = [];
 
-        private readonly Dictionary<ISymbol, Node> _nodes = [];
+        private readonly Dictionary<ISymbol, Node> unresolvedNodes = [];
         private readonly List<INode> _nodeHierarchy = [];
+        private readonly List<INode> _nodes = [];
         private readonly List<Edge> _edges = [];
 
         public HierarchicalGraph(IResultReporter reporter)
@@ -24,6 +25,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         }
 
         public IEnumerable<INode> NodeHierarchy => _nodeHierarchy;
+        public IEnumerable<INode> Nodes => _nodes;
         public IEnumerable<IEdge> Edges => _edges;
 
         public bool AddNode(SyntaxNode node,
@@ -42,7 +44,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                 if (!IsNodeRegistered(symbol))
                 {
                     _nodeCount++;
-                    _nodes[symbol] = new Node(_nodeCount, symbol, parentSymbol, node, nodeType, cyclomaticComplexity); ;
+                    unresolvedNodes[symbol] = new Node(_nodeCount, symbol, parentSymbol, node, nodeType, cyclomaticComplexity); ;
                 }
                 success = true;
             }
@@ -78,13 +80,13 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         {
             _nodeHierarchy.Clear();
 
-            foreach (Node node in _nodes.Values)
+            foreach (Node node in unresolvedNodes.Values)
             {
                 Node? parentNode = null;
 
-                if (node.ParentSymbol != null && _nodes.ContainsKey(node.ParentSymbol))
+                if (node.ParentSymbol != null && unresolvedNodes.ContainsKey(node.ParentSymbol))
                 {
-                    parentNode = _nodes[node.ParentSymbol];
+                    parentNode = unresolvedNodes[node.ParentSymbol];
                     parentNode.AddChildNode(node);
                 }
                 else
@@ -95,10 +97,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
             foreach (UnresolvedEdge unresolvedEdge in _unresolvedEdges)
             {
-                if (_nodes.ContainsKey(unresolvedEdge.SourceSymbol) && _nodes.ContainsKey(unresolvedEdge.TargetSymbol))
+                if (unresolvedNodes.ContainsKey(unresolvedEdge.SourceSymbol) && unresolvedNodes.ContainsKey(unresolvedEdge.TargetSymbol))
                 {
-                    Node sourceNode = _nodes[unresolvedEdge.SourceSymbol];
-                    Node targetNode = _nodes[unresolvedEdge.TargetSymbol];
+                    Node sourceNode = unresolvedNodes[unresolvedEdge.SourceSymbol];
+                    Node targetNode = unresolvedNodes[unresolvedEdge.TargetSymbol];
                     _edges.Add(new Edge(unresolvedEdge.Id, sourceNode, targetNode, unresolvedEdge.SyntaxNode, unresolvedEdge.EdgeType));
                 }
             }
@@ -109,7 +111,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
         private bool IsNodeRegistered(ISymbol symbol)
         {
-            return _nodes.ContainsKey(symbol);
+            return unresolvedNodes.ContainsKey(symbol);
         }
 
         private void RegisterResult(string actionDescription,

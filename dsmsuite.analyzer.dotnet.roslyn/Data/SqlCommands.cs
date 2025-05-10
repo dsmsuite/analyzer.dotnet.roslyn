@@ -64,5 +64,20 @@ CREATE TABLE SourceFile(
     id INTEGER PRIMARY KEY,                                    -- Unique ID
     filename TEXT NOT NULL UNIQUE                              -- The full path of the source file;
 );";
+
+        public const string InsertNode = @"INSERT INTO Node (id, name, node_type_id, parent_id, source_file_id, begin_line_no, end_line_no, complexity, documentation, annotation)
+                                                VALUES (@id,  @name, @node_type_id, @parent_id, @source_file_id, @begin_line_no, @end_line_no, @complexity, @documentation, @annotation);";
+
+        public const string InsertEdge = @"INSERT INTO Edge (id, source_id, target_id, edge_type_id, strength, source_file_id, line_no, annotation)
+                                                VALUES (@id, @source_id, @target_id, @edge_type_id, @strength, @source_file_id, @line_no, @annotation);";
+
+        public const string InsertFilename = @"INSERT INTO SourceFile (id, filename)
+                                                VALUES (@id, @filename);";
+
+        public const string InsertNodeType = @"INSERT INTO NodeType (id, name)
+                                                VALUES (@id, @name);";
+
+        public const string InsertEdgeType = @"INSERT INTO EdgeType (id, name)
+                                                VALUES (@id, @name);";
     }
 }

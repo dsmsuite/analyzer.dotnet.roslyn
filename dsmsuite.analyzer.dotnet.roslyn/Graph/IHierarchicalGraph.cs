@@ -4,6 +4,7 @@
     {
         IEnumerable<IEdge> Edges { get; }
         IEnumerable<INode> NodeHierarchy { get; }
+        IEnumerable<INode> Nodes { get; }
 
         int EdgeCount { get; }
         int NodeCount { get; }
