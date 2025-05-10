@@ -1,6 +1,9 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
+using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
+using System.Threading.Tasks;
 
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
@@ -8,13 +11,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
     public class SolutionAnalyzer : ICodeAnalyzer
     {
         private readonly string _solutionPath;
-        private readonly ICodeAnalysisResult _results;
+        private readonly HierarchicalGraph hierarchicalGraph;
 
-        public SolutionAnalyzer(string solutionPath, ICodeAnalysisResult results)
+        public SolutionAnalyzer(string solutionPath, IResultReporter reporter)
         {
             _solutionPath = solutionPath;
-            _results = results;
+            hierarchicalGraph = new HierarchicalGraph(reporter);
         }
+        
+        public IHierarchicalGraph AnalysisResult => hierarchicalGraph;
 
         public async Task AnalyzeAsync()
         {
@@ -41,7 +46,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
                                     SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
 
                                     SyntaxNode root = await syntaxTree.GetRootAsync();
-                                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, _results);
+                                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, hierarchicalGraph);
                                     visitor.Visit(root);
                                 }
                             }
@@ -50,6 +55,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
                 }
             }
         }
+
+        public IEnumerable<INode> NodeHierarchy => hierarchicalGraph.NodeHierarchy;
+        public IEnumerable<IEdge> Edges => hierarchicalGraph.Edges;
     }
 }
 ;

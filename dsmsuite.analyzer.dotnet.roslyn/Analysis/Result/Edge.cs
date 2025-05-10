@@ -1,4 +1,5 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
+using Microsoft.CodeAnalysis;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {

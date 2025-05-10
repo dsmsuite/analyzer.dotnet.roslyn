@@ -33,19 +33,19 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
         //    SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
         //}
 
-        public static void Analyz2(string file)
+        public static void Analyz2(string sourceCodeFile)
         {
-            SyntaxTree tree = CreateSyntaxTree(file);
+            SyntaxTree tree = CreateSyntaxTreeFromSourceCodeFile(sourceCodeFile);
             SemanticModel semanticModel = CreateSemanticModel(tree);
-            ResultReporter reporter = new ResultReporter();
-            CodeAnalysisResult result = new CodeAnalysisResult(reporter);
-            SyntaxNodeVisitor walker = new SyntaxNodeVisitor(semanticModel, result);
+            HierarchicalGraph hierarchicalGraph = CreateHierarchicalGraph();
+            SyntaxNodeVisitor walker = new SyntaxNodeVisitor(semanticModel, hierarchicalGraph);
             walker.Visit(tree.GetRoot());
 
-            //Assert.IsTrue(result.EdgeTypes.Count >  0);
+            Assert.IsTrue(hierarchicalGraph.EdgeCount > 0);
+            Assert.IsTrue(hierarchicalGraph.NodeCount > 0);
         }
 
-        private static SyntaxTree CreateSyntaxTree(string file)
+        private static SyntaxTree CreateSyntaxTreeFromSourceCodeFile(string file)
         {
             string code = File.ReadAllText(file);
             return CSharpSyntaxTree.ParseText(code);
@@ -53,13 +53,25 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
 
         private static SemanticModel CreateSemanticModel(SyntaxTree tree)
         {
+            CSharpCompilation compilation = CreateCompilationUnit(tree);
+            return compilation.GetSemanticModel(tree);
+        }
+
+        private static HierarchicalGraph CreateHierarchicalGraph()
+        {
+            ResultReporter reporter = new ResultReporter();
+            return new HierarchicalGraph(reporter);
+        }
+
+        private static CSharpCompilation CreateCompilationUnit(SyntaxTree tree)
+        {
             Guid guid = Guid.NewGuid();
             PortableExecutableReference mscorlib = MetadataReference.CreateFromFile(typeof(object).Assembly.Location);
             CSharpCompilation compilation = CSharpCompilation.Create(
                 $"Analysis_{guid}",
                 syntaxTrees: new[] { tree },
                 references: new[] { mscorlib });
-            return compilation.GetSemanticModel(tree);
+            return compilation;
         }
     }
 }

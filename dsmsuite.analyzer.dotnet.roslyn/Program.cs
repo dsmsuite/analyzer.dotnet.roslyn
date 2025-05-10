@@ -46,8 +46,7 @@ var services = new ServiceCollection();
 
 // Register dependencies
 ResultReporter resultReporter = new ResultReporter();
-CodeAnalysisResult resultCollector = new CodeAnalysisResult(resultReporter);
-SolutionAnalyzer analyzer = new SolutionAnalyzer(solutionFileInfo.FullName, resultCollector);
+SolutionAnalyzer analyzer = new SolutionAnalyzer(solutionFileInfo.FullName, resultReporter);
 await analyzer.AnalyzeAsync();
 
 SqliteGraphRepository sqliteGraphRepository = new SqliteGraphRepository(outputFileFileInfo.FullName);

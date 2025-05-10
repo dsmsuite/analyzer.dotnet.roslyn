@@ -3,7 +3,7 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Storage
 {
-    public class ResultStorage
+    public class DatabaseExport
     {
         private readonly IGraphRepository _repository;
 
@@ -15,12 +15,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Storage
         private readonly Dictionary<NodeType, int> _nodeTypeIds = [];
         private readonly Dictionary<EdgeType, int> _edgeTypeIds = [];
 
-        public ResultStorage(IGraphRepository repository)
+        public DatabaseExport(IGraphRepository repository)
         {
             _repository = repository;
         }
 
-        public void Persist(IGraph graph)
+        public void Export(IHierarchicalGraph graph)
         {
             _repository.Create();
 

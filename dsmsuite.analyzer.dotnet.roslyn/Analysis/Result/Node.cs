@@ -7,7 +7,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
     {
         private int _id;
         private ISymbol _symbol;
-        private ISymbol _parentSymbol;
+        private ISymbol? _parentSymbol;
         private SyntaxNode _syntaxNode;
         private NodeType _nodeType;
         private int _cyclomaticComplexity;
@@ -59,10 +59,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             }
         }
 
-        public void InsertChildAtEnd(INode child)
+        public void AddChildNode(INode child)
         {
             _children.Add(child);
-            Node c = child as Node;
+            Node? c = child as Node;
             if (c != null)
             {
                 c._parent = this;

@@ -8,13 +8,13 @@ using Microsoft.CodeAnalysis.FlowAnalysis;
 public class SyntaxNodeVisitor : CSharpSyntaxWalker
 {
     private readonly SemanticModel _semanticModel;
-    private readonly ICodeAnalysisResult _result;
+    private readonly IHierarchicalGraphBuilder _hierarchicalGraphBuilder;
 
-    public SyntaxNodeVisitor(SemanticModel semanticModel, ICodeAnalysisResult result)
+    public SyntaxNodeVisitor(SemanticModel semanticModel, IHierarchicalGraphBuilder hierarchicalGraphBuilder)
         : base(SyntaxWalkerDepth.Token)
     {
         _semanticModel = semanticModel;
-        _result = result;
+        _hierarchicalGraphBuilder = hierarchicalGraphBuilder;
     }
 
     //Visit namespaces
@@ -28,7 +28,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
             {
                 if (!namespaceSymbol.IsGlobalNamespace)
                 {
-                    _result.RegisterNode(node, namespaceSymbol, namespaceSymbol.ContainingNamespace, NodeType.Namespace);
+                    _hierarchicalGraphBuilder.AddNode(node, namespaceSymbol, namespaceSymbol.ContainingNamespace, NodeType.Namespace);
                 }
                 namespaceSymbol = namespaceSymbol.ContainingNamespace;
             }
@@ -54,7 +54,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? classSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = classSymbol?.ContainingNamespace;
-        _result.RegisterNode(node, classSymbol, parentSymbol, NodeType.Class);
+        _hierarchicalGraphBuilder.AddNode(node, classSymbol, parentSymbol, NodeType.Class);
 
         if (classSymbol != null)
         {
@@ -69,7 +69,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? structSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = structSymbol?.ContainingNamespace;
-        _result.RegisterNode(node, structSymbol, parentSymbol, NodeType.Struct);
+        _hierarchicalGraphBuilder.AddNode(node, structSymbol, parentSymbol, NodeType.Struct);
 
         if (structSymbol != null)
         {
@@ -84,7 +84,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? interfaceSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = interfaceSymbol?.ContainingNamespace;
-        _result.RegisterNode(node, interfaceSymbol, parentSymbol, NodeType.Interface);
+        _hierarchicalGraphBuilder.AddNode(node, interfaceSymbol, parentSymbol, NodeType.Interface);
 
         if (interfaceSymbol != null)
         {
@@ -98,7 +98,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         INamedTypeSymbol? enumSymbol = _semanticModel.GetDeclaredSymbol(node);
         INamespaceSymbol? parentSymbol = enumSymbol?.ContainingNamespace;
-        _result.RegisterNode(node, enumSymbol, parentSymbol, NodeType.Enum);
+        _hierarchicalGraphBuilder.AddNode(node, enumSymbol, parentSymbol, NodeType.Enum);
 
         base.VisitEnumDeclaration(node);
     }
@@ -123,7 +123,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
         var context = _semanticModel.GetEnclosingSymbol(node.SpanStart);
-        _result.RegisterEdge(node, context, symbol, EdgeType.TypeUsage);
+        _hierarchicalGraphBuilder.AddEdge(node, context, symbol, EdgeType.TypeUsage);
 
         base.VisitIdentifierName(node);
     }
@@ -143,7 +143,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         IMethodSymbol? methodSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = methodSymbol?.ContainingSymbol;
         int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
-        _result.RegisterNode(node, methodSymbol, parentSymbol, NodeType.Method, cyclomaticComplexity);
+        _hierarchicalGraphBuilder.AddNode(node, methodSymbol, parentSymbol, NodeType.Method, cyclomaticComplexity);
 
         base.VisitMethodDeclaration(node);
     }
@@ -158,7 +158,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? constructorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = constructorSymbol?.ContainingSymbol;
-        _result.RegisterNode(node, constructorSymbol, parentSymbol, NodeType.Constructor);
+        _hierarchicalGraphBuilder.AddNode(node, constructorSymbol, parentSymbol, NodeType.Constructor);
         base.VisitConstructorDeclaration(node);
     }
 
@@ -166,7 +166,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? destructorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = destructorSymbol?.ContainingSymbol;
-        _result.RegisterNode(node, destructorSymbol, parentSymbol, NodeType.Destructor);
+        _hierarchicalGraphBuilder.AddNode(node, destructorSymbol, parentSymbol, NodeType.Destructor);
         base.VisitDestructorDeclaration(node);
     }
 
@@ -174,7 +174,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IMethodSymbol? operatorSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = operatorSymbol?.ContainingSymbol;
-        _result.RegisterNode(node, operatorSymbol, parentSymbol, NodeType.Operator);
+        _hierarchicalGraphBuilder.AddNode(node, operatorSymbol, parentSymbol, NodeType.Operator);
         base.VisitOperatorDeclaration(node);
     }
 
@@ -183,10 +183,10 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IPropertySymbol? propertySymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = propertySymbol?.ContainingSymbol;
-        _result.RegisterNode(node, propertySymbol, parentSymbol, NodeType.Property);
+        _hierarchicalGraphBuilder.AddNode(node, propertySymbol, parentSymbol, NodeType.Property);
 
         ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
-        _result.RegisterEdge(node, parentSymbol, typeSymbol, EdgeType.PropertyType);
+        _hierarchicalGraphBuilder.AddEdge(node, parentSymbol, typeSymbol, EdgeType.PropertyType);
 
         base.VisitPropertyDeclaration(node);
     }
@@ -198,10 +198,10 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             IFieldSymbol? fieldSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as IFieldSymbol;
             ISymbol? parentSymbol = fieldSymbol.ContainingSymbol;
-            _result.RegisterNode(variableNode, fieldSymbol, parentSymbol, NodeType.Field);
+            _hierarchicalGraphBuilder.AddNode(variableNode, fieldSymbol, parentSymbol, NodeType.Field);
 
             ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Declaration.Type).Type;
-            _result.RegisterEdge(variableNode, parentSymbol, typeSymbol, EdgeType.FieldType);
+            _hierarchicalGraphBuilder.AddEdge(variableNode, parentSymbol, typeSymbol, EdgeType.FieldType);
         }
 
         base.VisitFieldDeclaration(node);
@@ -214,10 +214,10 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as ILocalSymbol;
             ISymbol? parentSymbol = variableSymbol?.ContainingSymbol;
-            _result.RegisterNode(variableNode, variableSymbol, parentSymbol, NodeType.Variable); //   Line=218 Failed=26/59
+            _hierarchicalGraphBuilder.AddNode(variableNode, variableSymbol, parentSymbol, NodeType.Variable); //   Line=218 Failed=26/59
 
             ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
-            _result.RegisterEdge(variableNode, parentSymbol, typeSymbol, EdgeType.VariableType); // Line=221 Failed=26/59
+            _hierarchicalGraphBuilder.AddEdge(variableNode, parentSymbol, typeSymbol, EdgeType.VariableType); // Line=221 Failed=26/59
         }
 
         base.VisitVariableDeclaration(node);
@@ -231,7 +231,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         {
             IEventSymbol? eventFieldSymbol = _semanticModel.GetDeclaredSymbol(eventField) as IEventSymbol;
             ISymbol? parentSymbol = eventFieldSymbol?.ContainingSymbol;
-            _result.RegisterNode(node, eventFieldSymbol, parentSymbol, NodeType.Event);
+            _hierarchicalGraphBuilder.AddNode(node, eventFieldSymbol, parentSymbol, NodeType.Event);
         }
 
         base.VisitEventFieldDeclaration(node);
@@ -241,7 +241,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         IFieldSymbol? enumMemberSymbol = _semanticModel.GetDeclaredSymbol(node);
         ISymbol? parentSymbol = enumMemberSymbol?.ContainingSymbol;
-        _result.RegisterNode(node, enumMemberSymbol, parentSymbol, NodeType.EnumValue);
+        _hierarchicalGraphBuilder.AddNode(node, enumMemberSymbol, parentSymbol, NodeType.EnumValue);
         base.VisitEnumMemberDeclaration(node);
     }
 
@@ -258,11 +258,11 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
             }
             else
             {
-                _result.RegisterEdge(node, caller, callee, EdgeType.Call);
+                _hierarchicalGraphBuilder.AddEdge(node, caller, callee, EdgeType.Call);
 
                 if (callee.IsOverride && callee.OverriddenMethod != null)
                 {
-                    _result.RegisterEdge(node, callee, callee.OverriddenMethod, EdgeType.Overrride);
+                    _hierarchicalGraphBuilder.AddEdge(node, callee, callee.OverriddenMethod, EdgeType.Overrride);
                 }
             }
         }
@@ -273,7 +273,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         ITypeSymbol? returnTypeSymbol = _semanticModel.GetTypeInfo(node.Expression).Type;
         ISymbol? parentSymbol = _semanticModel.GetEnclosingSymbol(node.SpanStart);
-        _result.RegisterEdge(node, parentSymbol, returnTypeSymbol, EdgeType.ReturnType);
+        _hierarchicalGraphBuilder.AddEdge(node, parentSymbol, returnTypeSymbol, EdgeType.ReturnType);
 
         base.VisitReturnStatement(node);
     }
@@ -282,13 +282,13 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         ITypeParameterSymbol? typeParameterSymbol = _semanticModel.GetDeclaredSymbol(node) as ITypeParameterSymbol;
         ISymbol? parentSymbol = typeParameterSymbol?.ContainingSymbol;
-        _result.RegisterNode(node, typeParameterSymbol, parentSymbol, NodeType.TypeParameter);
+        _hierarchicalGraphBuilder.AddNode(node, typeParameterSymbol, parentSymbol, NodeType.TypeParameter);
 
         if (typeParameterSymbol != null)
         {
             foreach (var constraint in typeParameterSymbol.ConstraintTypes)
             {
-                _result.RegisterEdge(node, typeParameterSymbol, constraint, EdgeType.TemplateParameter);
+                _hierarchicalGraphBuilder.AddEdge(node, typeParameterSymbol, constraint, EdgeType.TemplateParameter);
             }
         }
 
@@ -303,12 +303,12 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         ISymbol? parentSymbol = eventSymbol?.ContainingSymbol;
         if (node.IsKind(SyntaxKind.AddAssignmentExpression))
         {
-            _result.RegisterEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.SubscribeEvent);
-            _result.RegisterEdge(node, parentSymbol, eventSymbol, EdgeType.HandlEvent);
+            _hierarchicalGraphBuilder.AddEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.SubscribeEvent);
+            _hierarchicalGraphBuilder.AddEdge(node, parentSymbol, eventSymbol, EdgeType.HandlEvent);
         }
         else if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
         {
-            _result.RegisterEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.UnsubscribeEvent);
+            _hierarchicalGraphBuilder.AddEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.UnsubscribeEvent);
         }
 
         base.VisitAssignmentExpression(node);
@@ -427,7 +427,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         if (symbol.BaseType != null && symbol.BaseType.SpecialType != SpecialType.System_Object)
         {
-            _result.RegisterEdge(node, symbol, symbol.BaseType, EdgeType.InheritsFrom);
+            _hierarchicalGraphBuilder.AddEdge(node, symbol, symbol.BaseType, EdgeType.InheritsFrom);
         }
     }
 
@@ -435,7 +435,7 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     {
         foreach (var iface in symbol.Interfaces)
         {
-            _result.RegisterEdge(node, symbol, iface, EdgeType.Implements);
+            _hierarchicalGraphBuilder.AddEdge(node, symbol, iface, EdgeType.Implements);
         }
     }
 

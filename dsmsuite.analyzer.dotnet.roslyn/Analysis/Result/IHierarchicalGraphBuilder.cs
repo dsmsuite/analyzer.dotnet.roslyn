@@ -4,9 +4,9 @@ using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public interface ICodeAnalysisResult
+    public interface IHierarchicalGraphBuilder
     {
-        bool RegisterNode(SyntaxNode node,
+        bool AddNode(SyntaxNode node,
                    ISymbol? nodeSymbol,
                    ISymbol? parent,
                    NodeType nodeType,
@@ -15,7 +15,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                    [CallerMemberName] string method = "",
                    [CallerLineNumber] int lineNumber = 0);
 
-        bool RegisterEdge(SyntaxNode node,
+        bool AddEdge(SyntaxNode node,
                            ISymbol? edgeSource,
                            ISymbol? edgeTarget,
                            EdgeType edgeType,
@@ -23,7 +23,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                            [CallerMemberName] string method = "",
                            [CallerLineNumber] int lineNumber = 0);
 
-        IEnumerable<INode> NodeHierarchy { get; }
-        IEnumerable<IEdge> Edges { get; }
+        void Build();
     }
 }

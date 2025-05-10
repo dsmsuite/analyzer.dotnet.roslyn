@@ -1,11 +1,12 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
-    public class CodeAnalysisResult : ICodeAnalysisResult
+    public class HierarchicalGraph : IHierarchicalGraphBuilder, IHierarchicalGraph
     {
         private readonly IResultReporter _reporter;
 
@@ -18,7 +19,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         private readonly List<INode> _nodeHierarchy = [];
         private readonly List<Edge> _edges = [];
 
-        public CodeAnalysisResult(IResultReporter reporter)
+        public HierarchicalGraph(IResultReporter reporter)
         {
             _reporter = reporter;
         }
@@ -26,14 +27,14 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         public IEnumerable<INode> NodeHierarchy => _nodeHierarchy;
         public IEnumerable<IEdge> Edges => _edges;
 
-        public bool RegisterNode(SyntaxNode node,
-                           ISymbol? nodeSymbol,
-                           ISymbol? parent,
-                           NodeType nodeType,
-                           int cyclomaticComplexity = 0,
-                           [CallerFilePath] string sourceFile = "",
-                           [CallerMemberName] string method = "",
-                           [CallerLineNumber] int lineNumber = 0)
+        public bool AddNode(SyntaxNode node,
+                            ISymbol? nodeSymbol,
+                            ISymbol? parent,
+                            NodeType nodeType,
+                            int cyclomaticComplexity = 0,
+                            [CallerFilePath] string sourceFile = "",
+                            [CallerMemberName] string method = "",
+                            [CallerLineNumber] int lineNumber = 0)
         {
             bool success = false;
             if (nodeSymbol != null)
@@ -51,13 +52,13 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             return success;
         }
 
-        public bool RegisterEdge(SyntaxNode node,
-                                   ISymbol? edgeSource,
-                                   ISymbol? edgeTarget,
-                                   EdgeType edgeType,
-                                   [CallerFilePath] string sourceFile = "",
-                                   [CallerMemberName] string method = "",
-                                   [CallerLineNumber] int lineNumber = 0)
+        public bool AddEdge(SyntaxNode node,
+                            ISymbol? edgeSource,
+                            ISymbol? edgeTarget,
+                            EdgeType edgeType,
+                            [CallerFilePath] string sourceFile = "",
+                            [CallerMemberName] string method = "",
+                            [CallerLineNumber] int lineNumber = 0)
         {
             bool success = false;
 
@@ -73,7 +74,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             return success;
         }
 
-        public void BuildHierarchicalGraph()
+        public void Build()
         {
             _nodeHierarchy.Clear();
 
@@ -84,7 +85,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                 if (node.ParentSymbol != null && _nodes.ContainsKey(node.ParentSymbol))
                 {
                     parentNode = _nodes[node.ParentSymbol];
-                    parentNode.InsertChildAtEnd(node);
+                    parentNode.AddChildNode(node);
                 }
                 else
                 {
@@ -103,6 +104,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             }
         }
 
+        public int EdgeCount => _edgeIndex + 1;
+        public int NodeCount => _nodeIndex + 1;
+
         private bool IsNodeRegistered(ISymbol symbol)
         {
             return _nodes.ContainsKey(symbol);
@@ -120,8 +124,5 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
             _reporter.ReportResult(actionDescription, syntaxNodeFilename, syntaxNodeline, success, sourceFile, method, lineNumber);
         }
-
-
-
     }
 }
