@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace dsmsuite.analyzer.dotnet.roslyn.test.Methods
+﻿namespace dsmsuite.analyzer.dotnet.roslyn.test.Methods
 {
     public struct ProviderStruct
     {
@@ -101,8 +95,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test.Methods
             firstElement.PublicMethodB();
 
             // Use implicit type
-            listParameter[0].PublicMethodC();
-            listParameter[0].PublicMethodD();
+            //listParameter[0].PublicMethodC();
+            //listParameter[0].PublicMethodD();
         }
 
         public void MethodWithGenericClassParameter(ProviderGenericClass<ProviderTemplateArgument1, ProviderTemplateArgument2> genericClassParameter)
@@ -117,11 +111,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test.Methods
             u?.PublicMethodB();
 
             // Use implicit type
-            genericClassParameter.GetFirstTemplateArgument()?.PublicMethodC();
-            genericClassParameter.GetFirstTemplateArgument()?.PublicMethodD();
+            //genericClassParameter.GetFirstTemplateArgument()?.PublicMethodC();
+            //genericClassParameter.GetFirstTemplateArgument()?.PublicMethodD();
 
-            genericClassParameter.GetSecondTemplateArgument()?.PublicMethodC();
-            genericClassParameter.GetSecondTemplateArgument()?.PublicMethodD();
+            //genericClassParameter.GetSecondTemplateArgument()?.PublicMethodC();
+            //genericClassParameter.GetSecondTemplateArgument()?.PublicMethodD();
         }
     };
 }

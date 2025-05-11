@@ -1,5 +1,4 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
-using dsmsuite.analyzer.dotnet.roslyn.Graph;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.Data.Sqlite;
 using SQLitePCL;
 

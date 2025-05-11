@@ -1,10 +1,21 @@
-namespace dsmsuite.analyzer.dotnet.roslyn.test;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 
-[TestClass]
-public class MethodParametersTest
+namespace dsmsuite.analyzer.dotnet.roslyn.test.MethodParameters
 {
-    [TestMethod]
-    public void TestMethod1()
+
+    [TestClass]
+    public sealed class MethodParametersTest
     {
+        [TestMethod]
+        public void TestMethod1()
+        {
+            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("MethodParametersExample.cs");
+        }
+
+        [TestMethod]
+        public void TestMethod2()
+        {
+            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("MethodParametersExample.cs");
+        }
     }
 }

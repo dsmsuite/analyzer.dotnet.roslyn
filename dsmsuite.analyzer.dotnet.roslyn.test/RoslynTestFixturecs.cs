@@ -44,7 +44,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             foreach (IEdge edge in hierarchicalGraph.Edges)
             {
                 Console.WriteLine($"Edge: source={edge.Source.Name} target={edge.Target.Name} type={edge.EdgeType} file={edge.Filename} line={edge.Line}");
-            }   
+            }
         }
 
         private static SyntaxTree CreateSyntaxTreeFromSourceCodeFile(string sourceCodeFile, string callerFilePath)

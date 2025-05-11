@@ -1,10 +1,20 @@
-namespace dsmsuite.analyzer.dotnet.roslyn.test;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 
-[TestClass]
-public class EventsTest
+namespace dsmsuite.analyzer.dotnet.roslyn.test.Events
 {
-    [TestMethod]
-    public void TestMethod1()
+    [TestClass]
+    public class EventsTest
     {
+        [TestMethod]
+        public void TestMethod1()
+        {
+            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("EventsExample.cs");
+        }
+
+        [TestMethod]
+        public void TestMethod2()
+        {
+            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("EventsExample.cs");
+        }
     }
 }

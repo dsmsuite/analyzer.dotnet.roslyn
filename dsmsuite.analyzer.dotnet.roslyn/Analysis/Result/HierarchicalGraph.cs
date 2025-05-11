@@ -3,7 +3,6 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Xml.Linq;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
@@ -18,7 +17,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
         private readonly Dictionary<ISymbol, Node> _nodes = [];
         private readonly List<INode> _nodeHierarchy = [];
-         private readonly List<Edge> _edges = [];
+        private readonly List<Edge> _edges = [];
 
         public HierarchicalGraph(IResultReporter reporter)
         {

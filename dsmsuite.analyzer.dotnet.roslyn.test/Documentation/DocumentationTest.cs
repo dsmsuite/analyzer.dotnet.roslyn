@@ -1,10 +1,20 @@
-namespace dsmsuite.analyzer.dotnet.roslyn.test;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 
-[TestClass]
-public class DocumentationTest
+namespace dsmsuite.analyzer.dotnet.roslyn.test.Documentation
 {
-    [TestMethod]
-    public void TestMethod1()
+    [TestClass]
+    public class DocumentationTest
     {
+        [TestMethod]
+        public void TestMethod1()
+        {
+            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("DocumentationExample.cs");
+        }
+
+        [TestMethod]
+        public void TestMethod2()
+        {
+            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("DocumentationExample.cs");
+        }
     }
 }

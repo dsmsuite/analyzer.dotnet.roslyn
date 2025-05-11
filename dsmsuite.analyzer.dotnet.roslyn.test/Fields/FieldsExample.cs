@@ -1,11 +1,4 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.test.Events;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace dsmsuite.analyzer.dotnet.roslyn.test.Fields
+﻿namespace dsmsuite.analyzer.dotnet.roslyn.test.Fields
 {
     public struct ProviderStruct
     {
@@ -117,8 +110,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test.Fields
             firstElement.PublicMethodB();
 
             // Use implicit type
-            _listClassMember[0].PublicMethodC();
-            _listClassMember[0].PublicMethodD();
+            //_listClassMember[0].PublicMethodC();
+            //_listClassMember[0].PublicMethodD();
         }
 
         public void MethodUsingGenericClassMember()
@@ -133,11 +126,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test.Fields
             u?.PublicMethodB();
 
             // Use implicit type
-            _genericClassMember.GetFirstTemplateArgument()?.PublicMethodC();
-            _genericClassMember.GetFirstTemplateArgument()?.PublicMethodD();
+            //_genericClassMember.GetFirstTemplateArgument()?.PublicMethodC();
+            //_genericClassMember.GetFirstTemplateArgument()?.PublicMethodD();
 
-            _genericClassMember.GetSecondTemplateArgument()?.PublicMethodC();
-            _genericClassMember.GetSecondTemplateArgument()?.PublicMethodD();
+            //_genericClassMember.GetSecondTemplateArgument()?.PublicMethodC();
+            //_genericClassMember.GetSecondTemplateArgument()?.PublicMethodD();
         }
 
         private int _intMember;

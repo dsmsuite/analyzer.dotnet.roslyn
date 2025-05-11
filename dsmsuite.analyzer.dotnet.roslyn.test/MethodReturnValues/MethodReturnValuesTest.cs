@@ -1,10 +1,20 @@
-namespace dsmsuite.analyzer.dotnet.roslyn.test;
+using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 
-[TestClass]
-public class MethodReturnValuesTest
+namespace dsmsuite.analyzer.dotnet.roslyn.test.MethodReturnValues
 {
-    [TestMethod]
-    public void TestMethod1()
+    [TestClass]
+    public sealed class MethodReturnValuesTest
     {
+        [TestMethod]
+        public void TestMethod1()
+        {
+            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("MethodReturnValuesExample.cs");
+        }
+
+        [TestMethod]
+        public void TestMethod2()
+        {
+            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("MethodReturnValuesExample.cs");
+        }
     }
 }
