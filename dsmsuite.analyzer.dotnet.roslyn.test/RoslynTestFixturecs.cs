@@ -37,10 +37,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
 
         public static void PrintHierarchicalGraph(HierarchicalGraph hierarchicalGraph)
         {
-            foreach (INode node in hierarchicalGraph.Nodes)
-            {
-                Console.WriteLine($"Node: name={node.Name} type={node.NodeType} file={node.Filename} lines={node.Startline}-{node.Endline}");
-            }
+            //foreach (INode node in hierarchicalGraph.Nodes)
+            //{
+            //    Console.WriteLine($"Node: name={node.Name} type={node.NodeType} file={node.Filename} lines={node.Startline}-{node.Endline}");
+            //}
             foreach (IEdge edge in hierarchicalGraph.Edges)
             {
                 Console.WriteLine($"Edge: source={edge.Source.Name} target={edge.Target.Name} type={edge.EdgeType} file={edge.Filename} line={edge.Line}");

@@ -121,9 +121,9 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     //// Type Names
     public override void VisitIdentifierName(IdentifierNameSyntax node)
     {
-        var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
-        var context = _semanticModel.GetEnclosingSymbol(node.SpanStart);
-        _hierarchicalGraphBuilder.AddEdge(node, context, symbol, EdgeType.TypeUsage);
+        //var symbol = _semanticModel.GetSymbolInfo(node).Symbol;
+        //var context = _semanticModel.GetEnclosingSymbol(node.SpanStart);
+        //_hierarchicalGraphBuilder.AddEdge(node, context, symbol, EdgeType.TypeUsage);
 
         base.VisitIdentifierName(node);
     }
@@ -144,6 +144,14 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         ISymbol? parentSymbol = methodSymbol?.ContainingSymbol;
         int cyclomaticComplexity = CalculateCyclomaticComplexity(node);
         _hierarchicalGraphBuilder.AddNode(node, methodSymbol, parentSymbol, NodeType.Method, cyclomaticComplexity);
+
+        if (methodSymbol != null)
+        {
+            if (methodSymbol.IsOverride && methodSymbol.OverriddenMethod != null)
+            {
+                _hierarchicalGraphBuilder.AddEdge(node, methodSymbol, methodSymbol.OverriddenMethod, EdgeType.Overrride);
+            }
+        }
 
         base.VisitMethodDeclaration(node);
     }

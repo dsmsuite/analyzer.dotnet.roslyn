@@ -2,6 +2,7 @@ using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.test.Fields
 {
+
     [TestClass]
     public class FieldsTest
     {
