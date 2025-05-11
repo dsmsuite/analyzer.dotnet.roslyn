@@ -6,7 +6,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
     public interface IHierarchicalGraphBuilder
     {
-        bool AddNode(SyntaxNode node,
+        void AddNode(SyntaxNode node,
                    ISymbol? nodeSymbol,
                    ISymbol? parent,
                    NodeType nodeType,
@@ -15,7 +15,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                    [CallerMemberName] string method = "",
                    [CallerLineNumber] int lineNumber = 0);
 
-        bool AddEdge(SyntaxNode node,
+        void AddEdge(SyntaxNode node,
                            ISymbol? edgeSource,
                            ISymbol? edgeTarget,
                            EdgeType edgeType,

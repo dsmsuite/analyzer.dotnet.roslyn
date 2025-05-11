@@ -6,6 +6,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
     {
         Task AnalyzeAsync();
 
-        IHierarchicalGraph AnalysisResult { get; }
+        void BuildGraph();
+
+        IHierarchicalGraph Graph { get; }
     }
 }

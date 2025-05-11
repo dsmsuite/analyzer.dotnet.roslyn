@@ -1,4 +1,5 @@
-﻿using dsmsuite.analyzer.dotnet.roslyn.Graph;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
+using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using Microsoft.Data.Sqlite;
 using SQLitePCL;
 
@@ -23,49 +24,160 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
 
         public void Save(IHierarchicalGraph hierarchicalGraph)
         {
+            Create();
+            InsertFilenames(hierarchicalGraph);
+            InsertNodeTypes(hierarchicalGraph);
+            InsertEdgeTypes(hierarchicalGraph);
+            InsertNodes(hierarchicalGraph);
+            InsertEdges(hierarchicalGraph);
+        }
+
+        private void Create()
+        {
             using (var connection = new SqliteConnection(_connectionString))
             {
                 connection.Open();
-
-                Create(connection);
-
-                foreach (INode node in hierarchicalGraph.Nodes)
+                using (var command = connection.CreateCommand())
                 {
-                    int filenameId = RegisterFilename(node.Filename);
-                    int nodeTypeId = RegisterNodeType(node.NodeType);
-                    InsertNode(connection, node.Id, node.Name, nodeTypeId, node.Parent?.Id, filenameId, node.Startline, node.Endline, node.CyclomaticComplexity);
-                }
-
-                foreach (IEdge edge in hierarchicalGraph.Edges)
-                {
-                    int filenameId = RegisterFilename(edge.Filename);
-                    int edgeTypeId = RegisterEdgeType(edge.EdgeType);
-                    InsertEdge(connection, edge.Id, edge.Source.Id, edge.Target.Id, edgeTypeId, 1, filenameId, edge.Line);
-                }
-
-                foreach (KeyValuePair<string, int> keyValuePair in _filenameIds)
-                {
-                    InsertFilename(connection, keyValuePair.Value, keyValuePair.Key);
-                }
-
-                foreach (KeyValuePair<NodeType, int> keyValuePair in _nodeTypeIds)
-                {
-                    InsertNodeType(connection, keyValuePair.Value, keyValuePair.Key.ToString());
-                }
-
-                foreach (KeyValuePair<EdgeType, int> keyValuePair in _edgeTypeIds)
-                {
-                    InsertEdgeType(connection, keyValuePair.Value, keyValuePair.Key.ToString());
+                    command.CommandText = SqlCommands.CreateDatabase;
+                    command.ExecuteNonQuery();
                 }
             }
         }
 
-        private void Create(SqliteConnection connection)
+        private void InsertFilenames(IHierarchicalGraph hierarchicalGraph)
         {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+                foreach (INode node in hierarchicalGraph.Nodes)
+                {
+                    InsertFilenameIfEncounteredFirstTime(connection, node.Filename);
+                }
+
+                foreach (IEdge edge in hierarchicalGraph.Edges)
+                {
+                    InsertFilenameIfEncounteredFirstTime(connection, edge.Filename);
+                }
+            }
+        }
+
+        private void InsertFilenameIfEncounteredFirstTime(SqliteConnection connection, string filename)
+        {
+            if (!_filenameIds.ContainsKey(filename))
+            {
+                _filenameIndex++;
+                _filenameIds[filename] = _filenameIndex;
+                InsertFilename(connection, _filenameIndex, filename);
+            }
+        }
+
+        private void InsertFilename(SqliteConnection connection, int id, string filename)
+        {
+            using var transaction = connection.BeginTransaction();
+
             using (var command = connection.CreateCommand())
             {
-                command.CommandText = SqlCommands.CreateDatabase;
+                command.CommandText = SqlCommands.InsertFilename;
+
+                command.Parameters.AddWithValue("@id", id);
+                command.Parameters.AddWithValue("@filename", filename);
+
                 command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+
+        private void InsertNodeTypes(IHierarchicalGraph hierarchicalGraph)
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+                foreach (INode node in hierarchicalGraph.Nodes)
+                {
+                    InsertNodeTypeIfEncounteredFirstTime(connection, node.NodeType);
+                }
+            }
+        }
+
+        private void InsertNodeTypeIfEncounteredFirstTime(SqliteConnection connection, NodeType nodeType)
+        {
+            if (!_nodeTypeIds.ContainsKey(nodeType))
+            {
+                _nodeTypeIndex++;
+                _nodeTypeIds[nodeType] = _nodeTypeIndex;
+                InsertNodeType(connection, _nodeTypeIndex, nodeType);
+            }
+        }
+
+        private void InsertNodeType(SqliteConnection connection, int id, NodeType nodeType)
+        {
+            using var transaction = connection.BeginTransaction();
+
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = SqlCommands.InsertNodeType;
+
+                command.Parameters.AddWithValue("id", id);
+                command.Parameters.AddWithValue("name", nodeType.ToString());
+
+                command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+
+        private void InsertEdgeTypes(IHierarchicalGraph hierarchicalGraph)
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+                foreach (IEdge edge in hierarchicalGraph.Edges)
+                {
+                    InsertEdgeTypeIfEncounteredFirstTime(connection, edge.EdgeType);
+                }
+            }
+        }
+
+        private void InsertEdgeTypeIfEncounteredFirstTime(SqliteConnection connection, EdgeType edgeType)
+        {
+            if (!_edgeTypeIds.ContainsKey(edgeType))
+            {
+                _edgeTypeIndex++;
+                _edgeTypeIds[edgeType] = _edgeTypeIndex;
+                InsertEdgeType(connection, _edgeTypeIndex, edgeType);
+            }
+        }
+
+        private void InsertEdgeType(SqliteConnection connection, int id, EdgeType edgeType)
+        {
+            using var transaction = connection.BeginTransaction();
+
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = SqlCommands.InsertEdgeType;
+
+                command.Parameters.AddWithValue("@id", id);
+                command.Parameters.AddWithValue("@name", edgeType.ToString());
+
+                command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+
+        private void InsertNodes(IHierarchicalGraph hierarchicalGraph)
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+                foreach (INode node in hierarchicalGraph.Nodes)
+                {
+                    int filenameId = _filenameIds[node.Filename];
+                    int nodeTypeId = _nodeTypeIds[node.NodeType];
+                    InsertNode(connection, node.Id, node.Name, nodeTypeId, node.Parent?.Id, filenameId, node.Startline, node.Endline, node.CyclomaticComplexity);
+                }
             }
         }
 
@@ -93,6 +205,20 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
             transaction.Commit();
         }
 
+        private void InsertEdges(IHierarchicalGraph hierarchicalGraph)
+        {
+            using (var connection = new SqliteConnection(_connectionString))
+            {
+                connection.Open();
+                foreach (IEdge edge in hierarchicalGraph.Edges)
+                {
+                    int filenameId = _filenameIds[edge.Filename];
+                    int edgeTypeId = _edgeTypeIds[edge.EdgeType];
+                    InsertEdge(connection, edge.Id, edge.Source.Id, edge.Target.Id, edgeTypeId, 1, filenameId, edge.Line);
+                }
+            }
+        }
+
         private void InsertEdge(SqliteConnection connection, int id, int sourceId, int targetId, int edgeTypeId, int strength, int filenameId, int line)
         {
             using var transaction = connection.BeginTransaction();
@@ -115,97 +241,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Data
             transaction.Commit();
         }
 
-        private void InsertFilename(SqliteConnection connection, int id, string filename)
-        {
-            using var transaction = connection.BeginTransaction();
 
-            using (var command = connection.CreateCommand())
-            {
-                command.CommandText = SqlCommands.InsertFilename;
 
-                command.Parameters.AddWithValue("@id", id);
-                command.Parameters.AddWithValue("@filename", filename);
 
-                command.ExecuteNonQuery();
-            }
 
-            transaction.Commit();
-        }
 
-        private void InsertNodeType(SqliteConnection connection, int id, string name)
-        {
-            using var transaction = connection.BeginTransaction();
-
-            using (var command = connection.CreateCommand())
-            {
-                command.CommandText = SqlCommands.InsertNodeType;
-
-                command.Parameters.AddWithValue("id", id);
-                command.Parameters.AddWithValue("name", name);
-
-                command.ExecuteNonQuery();
-            }
-
-            transaction.Commit();
-        }
-
-        private void InsertEdgeType(SqliteConnection connection, int id, string name)
-        {
-            using var transaction = connection.BeginTransaction();
-
-            using (var command = connection.CreateCommand())
-            {
-                command.CommandText = SqlCommands.InsertEdgeType;
-
-                command.Parameters.AddWithValue("@id", id);
-                command.Parameters.AddWithValue("@name", name);
-
-                command.ExecuteNonQuery();
-            }
-
-            transaction.Commit();
-        }
-
-        private int RegisterFilename(string filename)
-        {
-            if (_filenameIds.ContainsKey(filename))
-            {
-                return _filenameIds[filename];
-            }
-            else
-            {
-                _filenameIndex++;
-                _filenameIds[filename] = _filenameIndex;
-                return _filenameIndex;
-            }
-        }
-
-        private int RegisterNodeType(NodeType nodeType)
-        {
-            if (_nodeTypeIds.ContainsKey(nodeType))
-            {
-                return _nodeTypeIds[nodeType];
-            }
-            else
-            {
-                _nodeTypeIndex++;
-                _nodeTypeIds[nodeType] = _nodeTypeIndex;
-                return _nodeTypeIndex;
-            }
-        }
-
-        private int RegisterEdgeType(EdgeType edgeType)
-        {
-            if (_edgeTypeIds.ContainsKey(edgeType))
-            {
-                return _edgeTypeIds[edgeType];
-            }
-            else
-            {
-                _edgeTypeIndex++;
-                _edgeTypeIds[edgeType] = _edgeTypeIndex;
-                return _edgeTypeIndex;
-            }
-        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Util;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -128,7 +129,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
         public static void LogResult(string actionDescription,
             string syntaxNodeFilename,
             int syntaxNodeline,
-            bool success,
+            Result result,
             [CallerFilePath] string sourceFile = "",
             [CallerMemberName] string method = "",
             [CallerLineNumber] int lineNumber = 0)
@@ -136,7 +137,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Util
             Action action = new Action(actionDescription, sourceFile, method, lineNumber);
             IncrementActionCount(_actionTotalCount, action);
 
-            if (!success)
+            if (result == Result.Failed)
             {
                 IncrementActionCount(_actionFailedCount, action);
 

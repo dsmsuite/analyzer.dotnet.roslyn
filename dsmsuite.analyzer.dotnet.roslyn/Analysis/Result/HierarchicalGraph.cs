@@ -1,7 +1,9 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
+using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Xml.Linq;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 {
@@ -14,10 +16,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
         private readonly List<UnresolvedEdge> _unresolvedEdges = [];
 
-        private readonly Dictionary<ISymbol, Node> unresolvedNodes = [];
+        private readonly Dictionary<ISymbol, Node> _nodes = [];
         private readonly List<INode> _nodeHierarchy = [];
-        private readonly List<INode> _nodes = [];
-        private readonly List<Edge> _edges = [];
+         private readonly List<Edge> _edges = [];
 
         public HierarchicalGraph(IResultReporter reporter)
         {
@@ -25,10 +26,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         }
 
         public IEnumerable<INode> NodeHierarchy => _nodeHierarchy;
-        public IEnumerable<INode> Nodes => _nodes;
+        public IEnumerable<INode> Nodes => _nodes.Values;
         public IEnumerable<IEdge> Edges => _edges;
 
-        public bool AddNode(SyntaxNode node,
+        public void AddNode(SyntaxNode syntaxNode,
                             ISymbol? symbol,
                             ISymbol? parentSymbol,
                             NodeType nodeType,
@@ -37,24 +38,29 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                             [CallerMemberName] string method = "",
                             [CallerLineNumber] int lineNumber = 0)
         {
-            bool success = false;
+            Result result = Result.Failed;
 
             if (symbol != null)
             {
-                if (!IsNodeRegistered(symbol))
+                if (IsSymbolInSourceCode(symbol))
                 {
-                    _nodeCount++;
-                    unresolvedNodes[symbol] = new Node(_nodeCount, symbol, parentSymbol, node, nodeType, cyclomaticComplexity); ;
+                    if (!IsNodeRegistered(symbol))
+                    {
+                        _nodeCount++;
+                        _nodes[symbol] = new Node(_nodeCount, symbol, parentSymbol, syntaxNode, nodeType, cyclomaticComplexity); ;
+                    }
+                    result = Result.Success;
                 }
-                success = true;
+                else
+                {
+                    result = Result.Ignored;
+                }
             }
 
-            RegisterResult($"Parse node={nodeType}", node, success, sourceFile, method, lineNumber);
-
-            return success;
+            RegisterResult($"Parse node={nodeType}", syntaxNode, result, sourceFile, method, lineNumber);
         }
 
-        public bool AddEdge(SyntaxNode node,
+        public void AddEdge(SyntaxNode node,
                             ISymbol? sourceSymbol,
                             ISymbol? targetSymbol,
                             EdgeType edgeType,
@@ -62,31 +68,37 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                             [CallerMemberName] string method = "",
                             [CallerLineNumber] int lineNumber = 0)
         {
-            bool success = false;
+            Result result = Result.Failed;
 
             if (sourceSymbol != null && targetSymbol != null)
             {
-                _edgeCount++;
-                _unresolvedEdges.Add(new UnresolvedEdge(_edgeCount, sourceSymbol, targetSymbol, node, edgeType));
-                success = true;
+                if (IsSymbolInSourceCode(sourceSymbol) && IsSymbolInSourceCode(targetSymbol))
+                {
+                    _edgeCount++;
+                    _unresolvedEdges.Add(new UnresolvedEdge(_edgeCount, sourceSymbol, targetSymbol, node, edgeType));
+                    result = Result.Success;
+                }
+                else
+                {
+                    result = Result.Ignored;
+                }
             }
 
-            RegisterResult($"Parse edge={edgeType}", node, success, sourceFile, method, lineNumber);
-
-            return success;
+            RegisterResult($"Parse edge={edgeType}", node, result, sourceFile, method, lineNumber);
         }
 
         public void Build()
         {
             _nodeHierarchy.Clear();
+            _edges.Clear();
 
-            foreach (Node node in unresolvedNodes.Values)
+            foreach (Node node in _nodes.Values)
             {
                 Node? parentNode = null;
 
-                if (node.ParentSymbol != null && unresolvedNodes.ContainsKey(node.ParentSymbol))
+                if (node.ParentSymbol != null && _nodes.ContainsKey(node.ParentSymbol))
                 {
-                    parentNode = unresolvedNodes[node.ParentSymbol];
+                    parentNode = _nodes[node.ParentSymbol];
                     parentNode.AddChildNode(node);
                 }
                 else
@@ -97,10 +109,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
             foreach (UnresolvedEdge unresolvedEdge in _unresolvedEdges)
             {
-                if (unresolvedNodes.ContainsKey(unresolvedEdge.SourceSymbol) && unresolvedNodes.ContainsKey(unresolvedEdge.TargetSymbol))
+                if (_nodes.ContainsKey(unresolvedEdge.SourceSymbol) && _nodes.ContainsKey(unresolvedEdge.TargetSymbol))
                 {
-                    Node sourceNode = unresolvedNodes[unresolvedEdge.SourceSymbol];
-                    Node targetNode = unresolvedNodes[unresolvedEdge.TargetSymbol];
+                    Node sourceNode = _nodes[unresolvedEdge.SourceSymbol];
+                    Node targetNode = _nodes[unresolvedEdge.TargetSymbol];
                     _edges.Add(new Edge(unresolvedEdge.Id, sourceNode, targetNode, unresolvedEdge.SyntaxNode, unresolvedEdge.EdgeType));
                 }
             }
@@ -111,12 +123,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
         private bool IsNodeRegistered(ISymbol symbol)
         {
-            return unresolvedNodes.ContainsKey(symbol);
+            return _nodes.ContainsKey(symbol);
         }
 
         private void RegisterResult(string actionDescription,
                                    SyntaxNode syntaxNode,
-                                   bool success,
+                                   Result result,
                                    [CallerFilePath] string sourceFile = "",
                                    [CallerMemberName] string method = "",
                                    [CallerLineNumber] int lineNumber = 0)
@@ -124,7 +136,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
             string syntaxNodeFilename = syntaxNode.SyntaxTree?.FilePath ?? "";
             int syntaxNodeline = syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line;
 
-            _reporter.ReportResult(actionDescription, syntaxNodeFilename, syntaxNodeline, success, sourceFile, method, lineNumber);
+            _reporter.ReportResult(actionDescription, syntaxNodeFilename, syntaxNodeline, result, sourceFile, method, lineNumber);
+        }
+
+        private bool IsSymbolInSourceCode(ISymbol symbol)
+        {
+            return symbol.Locations.All(loc => loc.IsInSource);
         }
     }
 }

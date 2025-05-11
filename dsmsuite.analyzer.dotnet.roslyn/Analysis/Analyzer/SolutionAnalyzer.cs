@@ -10,15 +10,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
     public class SolutionAnalyzer : ICodeAnalyzer
     {
         private readonly string _solutionPath;
-        private readonly HierarchicalGraph hierarchicalGraph;
+        private readonly HierarchicalGraph _hierarchicalGraph;
 
         public SolutionAnalyzer(string solutionPath, IResultReporter reporter)
         {
             _solutionPath = solutionPath;
-            hierarchicalGraph = new HierarchicalGraph(reporter);
+            _hierarchicalGraph = new HierarchicalGraph(reporter);
         }
 
-        public IHierarchicalGraph AnalysisResult => hierarchicalGraph;
+        public IHierarchicalGraph Graph => _hierarchicalGraph;
 
         public async Task AnalyzeAsync()
         {
@@ -27,42 +27,37 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Analyzer
 
             foreach (Project project in solution.Projects)
             {
-                await AnalyzeProject(project);
-            }
-        }
-
-        private async Task AnalyzeProject(Project project)
-        {
-            if (project.FilePath != null)
-            {
-                Console.WriteLine($"Processing project {project.FilePath}");
-
-                Compilation? compilation = await project.GetCompilationAsync();
-
-                if (compilation != null)
+                if (project.FilePath != null)
                 {
-                    foreach (Document document in project.Documents)
+                    Console.WriteLine($"Processing project {project.FilePath}");
+
+                    Compilation? compilation = await project.GetCompilationAsync();
+
+                    if (compilation != null)
                     {
-                        await AnalyzeSourceFile(compilation, document);
+                        foreach (Document document in project.Documents)
+                        {
+                            if (document.FilePath != null)
+                            {
+                                SyntaxTree? syntaxTree = await document.GetSyntaxTreeAsync();
+                                if (syntaxTree != null)
+                                {
+                                    SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
+
+                                    SyntaxNode root = await syntaxTree.GetRootAsync();
+                                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, _hierarchicalGraph);
+                                    visitor.Visit(root);
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
 
-        private async Task AnalyzeSourceFile(Compilation compilation, Document document)
+        public void BuildGraph()
         {
-            if (document.FilePath != null)
-            {
-                SyntaxTree? syntaxTree = await document.GetSyntaxTreeAsync();
-                if (syntaxTree != null)
-                {
-                    SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-
-                    SyntaxNode root = await syntaxTree.GetRootAsync();
-                    SyntaxNodeVisitor visitor = new SyntaxNodeVisitor(semanticModel, hierarchicalGraph);
-                    visitor.Visit(root);
-                }
-            }
+            _hierarchicalGraph.Build();
         }
     }
 }

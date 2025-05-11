@@ -1,4 +1,5 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Util;
+using dsmsuite.analyzer.dotnet.roslyn.Util;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting
 {
@@ -7,12 +8,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting
         public void ReportResult(string actionDescription,
                                  string syntaxNodeFilename,
                                  int syntaxNodeline,
-                                 bool success,
+                                 Result result,
                                  string sourceFile,
                                  string method,
                                  int lineNumber)
         {
-            Logger.LogResult(actionDescription, syntaxNodeFilename, syntaxNodeline, success, sourceFile, method, lineNumber);
+            Logger.LogResult(actionDescription, syntaxNodeFilename, syntaxNodeline, result, sourceFile, method, lineNumber);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using dsmsuite.analyzer.dotnet.roslyn.Util;
+using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting
 {
@@ -7,7 +8,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting
         void ReportResult(string actionDescription,
             string syntaxNodeFilename,
             int syntaxNodeline,
-            bool success,
+            Result result,
             [CallerFilePath] string sourceFile = "",
             [CallerMemberName] string method = "",
             [CallerLineNumber] int lineNumber = 0);

@@ -47,10 +47,10 @@ var services = new ServiceCollection();
 ResultReporter resultReporter = new ResultReporter();
 SolutionAnalyzer analyzer = new SolutionAnalyzer(solutionFileInfo.FullName, resultReporter);
 await analyzer.AnalyzeAsync();
+analyzer.BuildGraph();
 
 SqliteGraphRepository sqliteGraphRepository = new SqliteGraphRepository(outputFileFileInfo.FullName);
-//sqliteGraphRepository.SaveNode(resultCollector.Graph);
-
+sqliteGraphRepository.Save(analyzer.Graph);
 Logger.LogUserMessage("Done.");
 Logger.Flush();
 
