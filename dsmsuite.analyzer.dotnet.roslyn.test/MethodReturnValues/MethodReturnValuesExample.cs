@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace dsmsuite.analyzer.dotnet.roslyn.test.Generics
+namespace dsmsuite.analyzer.dotnet.roslyn.test.MethodReturnValues
 {
-    internal class GenericsExample
+    internal class MethodReturnValuesExample
     {
     }
 }

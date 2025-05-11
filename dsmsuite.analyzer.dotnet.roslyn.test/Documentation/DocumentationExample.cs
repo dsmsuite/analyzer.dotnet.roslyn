@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace dsmsuite.analyzer.dotnet.roslyn.test.Methods
+namespace dsmsuite.analyzer.dotnet.roslyn.test.Documentation
 {
-    internal class MethodsExample
+    internal class DocumentationExample
     {
     }
 }
