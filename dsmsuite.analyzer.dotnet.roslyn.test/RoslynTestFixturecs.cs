@@ -1,47 +1,59 @@
 ﻿using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 using dsmsuite.analyzer.dotnet.roslyn.Analysis.Reporting;
+using dsmsuite.analyzer.dotnet.roslyn.Graph;
+using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.test
 {
-    public class RoslynTestFixturecs
+    public class ReporterFake : IResultReporter
     {
-        //public void Analyze(string file)
-        //{
-        //    Workspace workspace = new AdhocWorkspace();
-        //    ProjectInfo projectInfo = ProjectInfo.Create(ProjectId.CreateNewId(),
-        //                                         VersionStamp.Create(),
-        //                                         "MyProject",
-        //                                         "MyAssembly",
-        //                                         LanguageNames.CSharp);
-
-        //    Project project = workspace.AddProject(projectInfo);
-
-        //    string sourceCode = File.ReadAllText(file);
-        //    Document document = workspace.AddDocument(project.Id, Path.GetFileName(file), SourceText.From(sourceCode));
-
-        //    SyntaxTree syntaxTree = document.GetSyntaxTreeAsync().Result;
-        //    SyntaxNode root = syntaxTree.GetRoot();
-        //    Compilation compilation = project.GetCompilationAsync().Result;
-        //    SemanticModel semanticModel = compilation.GetSemanticModel(syntaxTree);
-        //}
-
-        public static void Analyz2(string sourceCodeFile)
+        public void ReportResult(string actionDescription, string syntaxNodeFilename, int syntaxNodeline, Result result, [CallerFilePath] string sourceFile = "", [CallerMemberName] string method = "", [CallerLineNumber] int lineNumber = 0)
         {
-            SyntaxTree tree = CreateSyntaxTreeFromSourceCodeFile(sourceCodeFile);
+        }
+    }
+
+    public class RoslynTestFixture
+    {
+        public static HierarchicalGraph Analyze(string sourceCodeFile, [CallerFilePath] string callerFilePath = "")
+        {
+            SyntaxTree tree = CreateSyntaxTreeFromSourceCodeFile(sourceCodeFile, callerFilePath);
             SemanticModel semanticModel = CreateSemanticModel(tree);
             HierarchicalGraph hierarchicalGraph = CreateHierarchicalGraph();
             SyntaxNodeVisitor walker = new SyntaxNodeVisitor(semanticModel, hierarchicalGraph);
             walker.Visit(tree.GetRoot());
+            hierarchicalGraph.Build();
+            PrintHierarchicalGraph(hierarchicalGraph);
 
-            Assert.IsTrue(hierarchicalGraph.EdgeCount > 0);
-            Assert.IsTrue(hierarchicalGraph.NodeCount > 0);
+            return hierarchicalGraph;
         }
 
-        private static SyntaxTree CreateSyntaxTreeFromSourceCodeFile(string file)
+        public void ReportResult(string actionDescription, string syntaxNodeFilename, int syntaxNodeline, Result result, [CallerFilePath] string sourceFile = "", [CallerMemberName] string method = "", [CallerLineNumber] int lineNumber = 0)
         {
-            string code = File.ReadAllText(file);
+
+        }
+
+        public static void PrintHierarchicalGraph(HierarchicalGraph hierarchicalGraph)
+        {
+            foreach (INode node in hierarchicalGraph.Nodes)
+            {
+                Console.WriteLine($"Node: name={node.Name} type={node.NodeType} file={node.Filename} lines={node.Startline}-{node.Endline}");
+            }
+            foreach (IEdge edge in hierarchicalGraph.Edges)
+            {
+                Console.WriteLine($"Edge: source={edge.Source.Name} target={edge.Target.Name} type={edge.EdgeType} file={edge.Filename} line={edge.Line}");
+            }   
+        }
+
+        private static SyntaxTree CreateSyntaxTreeFromSourceCodeFile(string sourceCodeFile, string callerFilePath)
+        {
+            string? callerDirectoryPath = Path.GetDirectoryName(callerFilePath);
+            Assert.IsNotNull(callerDirectoryPath, "Caller directory path cannot be null.");
+
+            string filename = Path.Combine(callerDirectoryPath, sourceCodeFile);
+            string code = File.ReadAllText(filename);
             return CSharpSyntaxTree.ParseText(code);
         }
 
@@ -53,8 +65,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
 
         private static HierarchicalGraph CreateHierarchicalGraph()
         {
-            ResultReporter reporter = new ResultReporter();
-            return new HierarchicalGraph(reporter);
+            ReporterFake reporterFakeInstance = new ReporterFake();
+            return new HierarchicalGraph(reporterFakeInstance);
         }
 
         private static CSharpCompilation CreateCompilationUnit(SyntaxTree tree)
@@ -67,5 +79,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
                 references: new[] { mscorlib });
             return compilation;
         }
+
+
     }
 }

@@ -32,15 +32,4 @@
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Inheritance\" />
-    <Folder Include="Interfacing\" />
-    <Folder Include="Methods\" />
-    <Folder Include="Events\" />
-    <Folder Include="Fields\" />
-    <Folder Include="Generics\" />
-    <Folder Include="Variables\" />
-    <Folder Include="Properties\" />
-  </ItemGroup>
-
 </Project>
