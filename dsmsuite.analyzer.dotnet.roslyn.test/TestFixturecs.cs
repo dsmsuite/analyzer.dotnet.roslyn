@@ -209,7 +209,5 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
                 references: new[] { mscorlib });
             return compilation;
         }
-
-
     }
 }
