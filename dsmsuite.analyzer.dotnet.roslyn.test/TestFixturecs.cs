@@ -10,18 +10,18 @@ using System.Xml.Linq;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.test
 {
-    public class ReporterFake : IResultReporter
+    public class TestFixture : IResultReporter
     {
-        public void ReportResult(string actionDescription, string syntaxNodeFilename, int syntaxNodeline, Result result, [CallerFilePath] string sourceFile = "", [CallerMemberName] string method = "", [CallerLineNumber] int lineNumber = 0)
-        {
-            Console.WriteLine($"Action: {actionDescription} syntaxNodeFilename={syntaxNodeFilename} syntaxNodeline={syntaxNodeline} result={result} sourceFile={sourceFile} method={method} lineNumber={lineNumber}");
-        }
-    }
+        private string _namespace;
+        private HierarchicalGraph _hierarchicalGraph;
+        private int _failedCount = 0;
+        private int _ignoredCount = 0;
 
-    public class TestFixture
-    {
-        private string _namespace = GetNamespace();
-        private HierarchicalGraph _hierarchicalGraph = CreateHierarchicalGraph();
+        public TestFixture()
+        {
+            _namespace = GetNamespace();
+            _hierarchicalGraph = CreateHierarchicalGraph();
+        }
 
         public void Analyze(string sourceCodeFile, [CallerFilePath] string callerFilePath = "")
         {
@@ -33,13 +33,15 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
         }
 
         public string Namespace => _namespace;
+        public int FailedCount => _failedCount;
+        public int IgnoredCount => _ignoredCount;
 
-        public bool NodeCountIs(int expectedNodeCount)
+        public bool NodeCountIs(int expectedNodeCount, NodeType nodeType)
         {
             int actualNodeCount = 0;
             foreach (INode node in _hierarchicalGraph.Nodes)
             {
-                if (node.Fullname.StartsWith($"{_namespace}."))
+                if (node.Fullname.StartsWith($"{_namespace}.") && node.NodeType == nodeType)
                 {
                     actualNodeCount++;
                 }
@@ -61,7 +63,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             int count = 0;
             foreach (INode node in _hierarchicalGraph.Nodes)
             {
-                if (NodeNameMatches(node, name) && 
+                if (NodeNameMatches(node, name) &&
                     NodeTypeMatches(node, nodeType))
                 {
                     count++;
@@ -83,9 +85,18 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             return count == 1;
         }
 
-        public bool EdgeCountIs(int expectedEdgeCount)
+        public bool EdgeCountIs(int expectedEdgeCount, EdgeType edgeType)
         {
-            bool actualEdgeCountOk = _hierarchicalGraph.Edges.Count() == expectedEdgeCount;
+            int actualEdgeCount = 0;
+            foreach (IEdge edge in _hierarchicalGraph.Edges)
+            {
+                if (edge.EdgeType == edgeType)
+                {
+                    actualEdgeCount++;
+                }
+            }
+
+            bool actualEdgeCountOk = actualEdgeCount == expectedEdgeCount;
 
             if (!actualEdgeCountOk)
             {
@@ -101,8 +112,8 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             int count = 0;
             foreach (IEdge edge in _hierarchicalGraph.Edges)
             {
-                if (NodeNameMatches(edge.Source, source) && 
-                    NodeNameMatches(edge.Target, target) && 
+                if (NodeNameMatches(edge.Source, source) &&
+                    NodeNameMatches(edge.Target, target) &&
                     EdgeTypeMatches(edge, edge.EdgeType))
                 {
                     count++;
@@ -145,7 +156,19 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
 
         public void ReportResult(string actionDescription, string syntaxNodeFilename, int syntaxNodeline, Result result, [CallerFilePath] string sourceFile = "", [CallerMemberName] string method = "", [CallerLineNumber] int lineNumber = 0)
         {
-
+            switch (result)
+            {
+                case Result.Success:
+                    break;
+                case Result.Failed:
+                    _failedCount++;
+                    break;
+                case Result.Ignored:
+                    _ignoredCount++;    
+                    break;
+                default:
+                    break;
+            }
         }
 
         private SyntaxTree CreateSyntaxTreeFromSourceCodeFile(string sourceCodeFile, string callerFilePath)
@@ -164,13 +187,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             return compilation.GetSemanticModel(tree);
         }
 
-        private static HierarchicalGraph CreateHierarchicalGraph()
+        private HierarchicalGraph CreateHierarchicalGraph()
         {
-            ReporterFake reporterFakeInstance = new ReporterFake();
-            return new HierarchicalGraph(reporterFakeInstance);
+            return new HierarchicalGraph(this);
         }
 
-        private static string GetNamespace()
+        private string GetNamespace()
         {
             string? assemblyName = typeof(TestFixture).Assembly.GetName().Name;
             Assert.IsNotNull(assemblyName, "Assembly name cannot be null.");
