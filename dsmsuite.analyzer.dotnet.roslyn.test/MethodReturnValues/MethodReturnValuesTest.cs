@@ -3,18 +3,18 @@ using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 namespace dsmsuite.analyzer.dotnet.roslyn.test.MethodReturnValues
 {
     [TestClass]
-    public sealed class MethodReturnValuesTest
+    public sealed class MethodReturnValuesTest : TestFixture
     {
         [TestMethod]
         public void TestMethod1()
         {
-            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("MethodReturnValuesExample.cs");
+             Analyze("MethodReturnValuesExample.cs");
         }
 
         [TestMethod]
         public void TestMethod2()
         {
-            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("MethodReturnValuesExample.cs");
+             Analyze("MethodReturnValuesExample.cs");
         }
     }
 }

@@ -4,18 +4,18 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test.Fields
 {
 
     [TestClass]
-    public class FieldsTest
+    public class FieldsTest : TestFixture
     {
         [TestMethod]
         public void TestMethod1()
         {
-            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("FieldsExample.cs");
+             Analyze("FieldsExample.cs");
         }
 
         [TestMethod]
         public void TestMethod2()
         {
-            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("FieldsExample.cs");
+             Analyze("FieldsExample.cs");
         }
     }
 }

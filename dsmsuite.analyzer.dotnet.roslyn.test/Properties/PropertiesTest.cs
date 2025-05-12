@@ -3,18 +3,18 @@ using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
 namespace dsmsuite.analyzer.dotnet.roslyn.test.Properties
 {
     [TestClass]
-    public class PropertiesTest
+    public class PropertiesTest : TestFixture
     {
         [TestMethod]
         public void TestMethod1()
         {
-            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("PropertiesExample.cs");
+            Analyze("PropertiesExample.cs");
         }
 
         [TestMethod]
         public void TestMethod2()
         {
-            HierarchicalGraph hierarchicalGraph = RoslynTestFixture.Analyze("PropertiesExample.cs");
+            Analyze("PropertiesExample.cs");
         }
     }
 }
