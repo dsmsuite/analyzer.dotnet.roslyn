@@ -14,6 +14,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
     {
         public void ReportResult(string actionDescription, string syntaxNodeFilename, int syntaxNodeline, Result result, [CallerFilePath] string sourceFile = "", [CallerMemberName] string method = "", [CallerLineNumber] int lineNumber = 0)
         {
+            Console.WriteLine($"Action: {actionDescription} syntaxNodeFilename={syntaxNodeFilename} syntaxNodeline={syntaxNodeline} result={result} sourceFile={sourceFile} method={method} lineNumber={lineNumber}");
         }
     }
 

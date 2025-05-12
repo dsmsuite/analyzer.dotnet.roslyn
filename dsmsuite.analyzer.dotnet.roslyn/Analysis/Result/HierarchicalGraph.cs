@@ -2,6 +2,7 @@
 using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
@@ -46,6 +47,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                     if (!IsNodeRegistered(symbol))
                     {
                         _nodeCount++;
+                        string? comment = GetComment(syntaxNode);
                         _nodes[symbol] = new Node(_nodeCount, symbol, parentSymbol, syntaxNode, nodeType, cyclomaticComplexity); ;
                     }
                     result = Result.Success;
@@ -123,6 +125,34 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         private bool IsNodeRegistered(ISymbol symbol)
         {
             return _nodes.ContainsKey(symbol);
+        }
+
+        private string? GetComment(SyntaxNode node)
+        {
+            string? comment = null;
+
+            SyntaxToken token = node.GetFirstToken();
+
+            foreach (var trivia in token.LeadingTrivia)
+            {
+                if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
+                    trivia.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
+                    trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
+                {
+                    comment = trivia.ToFullString().Trim();
+                }
+            }
+
+            foreach (SyntaxTrivia trivia in token.TrailingTrivia)
+            {
+                if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
+                    trivia.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
+                    trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
+                {
+                    comment = trivia.ToFullString().Trim();
+                }
+            }
+            return comment;
         }
 
         private void RegisterResult(string actionDescription,
