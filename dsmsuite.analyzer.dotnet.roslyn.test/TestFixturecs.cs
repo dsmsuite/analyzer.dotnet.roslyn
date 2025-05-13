@@ -85,6 +85,20 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             return count == 1;
         }
 
+        public INode? FindNode(string name, NodeType nodeType)
+        {
+            INode foundNode = null;
+            foreach (INode node in _hierarchicalGraph.Nodes)
+            {
+                if (NodeNameMatches(node, name) &&
+                    NodeTypeMatches(node, nodeType))
+                {
+                    foundNode = node;
+                }
+            }
+            return foundNode;
+        }
+
         public bool EdgeCountIs(int expectedEdgeCount, EdgeType edgeType)
         {
             int actualEdgeCount = 0;
@@ -134,6 +148,21 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             return count == 1;
         }
 
+        public IEdge? FindEdge(string source, string target, EdgeType edgeType)
+        {
+            IEdge foundEdge = null;
+            foreach (IEdge edge in _hierarchicalGraph.Edges)
+            {
+                if (NodeNameMatches(edge.Source, source) &&
+                    NodeNameMatches(edge.Target, target) &&
+                    EdgeTypeMatches(edge, edge.EdgeType))
+                {
+                    foundEdge = edge;
+                }
+            }
+            return foundEdge;
+        }
+
         private bool NodeNameMatches(INode node, string actual)
         {
             return node.Fullname == GetExpectedNodeName(actual);
@@ -161,10 +190,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
                 case Result.Success:
                     break;
                 case Result.Failed:
+                    Console.WriteLine($"Failed: action={actionDescription} file={syntaxNodeFilename} line={syntaxNodeline} from method={method}");
                     _failedCount++;
                     break;
                 case Result.Ignored:
-                    _ignoredCount++;    
+                    Console.WriteLine($"Ignored: action={actionDescription} file={syntaxNodeFilename} line={syntaxNodeline} from method={method}");
+                    _ignoredCount++;
                     break;
                 default:
                     break;

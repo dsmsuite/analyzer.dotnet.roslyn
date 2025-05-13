@@ -3,6 +3,7 @@ using dsmsuite.analyzer.dotnet.roslyn.Graph;
 using dsmsuite.analyzer.dotnet.roslyn.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Newtonsoft.Json.Linq;
 using System.Runtime.CompilerServices;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
@@ -48,7 +49,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                     {
                         _nodeCount++;
                         string? comment = GetComment(syntaxNode);
-                        _nodes[symbol] = new Node(_nodeCount, symbol, parentSymbol, syntaxNode, nodeType, cyclomaticComplexity); ;
+                        _nodes[symbol] = new Node(_nodeCount, symbol, parentSymbol, syntaxNode, nodeType, cyclomaticComplexity, comment);
                     }
                     result = Result.Success;
                 }
@@ -129,17 +130,21 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
         private string? GetComment(SyntaxNode node)
         {
+            Console.WriteLine($"GetComments ------------------");
             string? comment = null;
 
-            SyntaxToken token = node.GetFirstToken();
+            var token = node.GetFirstToken();
 
-            foreach (var trivia in token.LeadingTrivia)
+            Console.WriteLine($"Token: {token.ToFullString()}");
+
+            foreach (SyntaxTrivia trivia in token.LeadingTrivia)
             {
                 if (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
                     trivia.IsKind(SyntaxKind.MultiLineCommentTrivia) ||
                     trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
                 {
                     comment = trivia.ToFullString().Trim();
+                    Console.WriteLine($"Leading comment: {comment}");
                 }
             }
 
@@ -150,8 +155,10 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                     trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
                 {
                     comment = trivia.ToFullString().Trim();
+                    Console.WriteLine($"Trailing comment: {comment}");
                 }
             }
+
             return comment;
         }
 

@@ -193,8 +193,8 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
         ISymbol? parentSymbol = propertySymbol?.ContainingSymbol;
         _hierarchicalGraphBuilder.AddNode(node, propertySymbol, parentSymbol, NodeType.Property);
 
-        ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
-        _hierarchicalGraphBuilder.AddEdge(node, parentSymbol, typeSymbol, EdgeType.PropertyType);
+        //ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
+        //_hierarchicalGraphBuilder.AddEdge(node, parentSymbol, typeSymbol, EdgeType.PropertyType);
 
         base.VisitPropertyDeclaration(node);
     }
@@ -208,8 +208,8 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
             ISymbol? parentSymbol = fieldSymbol.ContainingSymbol;
             _hierarchicalGraphBuilder.AddNode(variableNode, fieldSymbol, parentSymbol, NodeType.Field);
 
-            ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Declaration.Type).Type;
-            _hierarchicalGraphBuilder.AddEdge(variableNode, parentSymbol, typeSymbol, EdgeType.FieldType);
+        //    ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Declaration.Type).Type;
+        //    _hierarchicalGraphBuilder.AddEdge(variableNode, parentSymbol, typeSymbol, EdgeType.FieldType);
         }
 
         base.VisitFieldDeclaration(node);
@@ -218,15 +218,15 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     // Vafaiable Declarations
     public override void VisitVariableDeclaration(VariableDeclarationSyntax node)
     {
-        foreach (VariableDeclaratorSyntax variableNode in node.Variables)
-        {
-            ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as ILocalSymbol;
-            ISymbol? parentSymbol = variableSymbol?.ContainingSymbol;
-            _hierarchicalGraphBuilder.AddNode(variableNode, variableSymbol, parentSymbol, NodeType.Variable); //   Line=218 Failed=26/59
+        //foreach (VariableDeclaratorSyntax variableNode in node.Variables)
+        //{
+        //    ILocalSymbol? variableSymbol = _semanticModel.GetDeclaredSymbol(variableNode) as ILocalSymbol;
+        //    ISymbol? parentSymbol = variableSymbol?.ContainingSymbol;
+        //    _hierarchicalGraphBuilder.AddNode(variableNode, variableSymbol, parentSymbol, NodeType.Variable); //   Line=218 Failed=26/59
 
-            ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
-            _hierarchicalGraphBuilder.AddEdge(variableNode, parentSymbol, typeSymbol, EdgeType.VariableType); // Line=221 Failed=26/59
-        }
+        //    ITypeSymbol? typeSymbol = _semanticModel.GetTypeInfo(node.Type).Type;
+        //    _hierarchicalGraphBuilder.AddEdge(variableNode, parentSymbol, typeSymbol, EdgeType.VariableType); // Line=221 Failed=26/59
+        //}
 
         base.VisitVariableDeclaration(node);
     }

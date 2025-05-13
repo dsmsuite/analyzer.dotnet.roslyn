@@ -13,5 +13,6 @@
         List<INode> Children { get; }
         INode? Parent { get; }
         string Fullname { get; }
+        string ? Comment { get; }
     }
 }

@@ -22,6 +22,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
         public EdgeType EdgeType { get; }
 
         public string Filename => _syntaxNode.SyntaxTree?.FilePath ?? "";
-        public int Line => _syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line;
+        public int Line => _syntaxNode.GetLocation().GetLineSpan().StartLinePosition.Line + 1;
     }
 }
