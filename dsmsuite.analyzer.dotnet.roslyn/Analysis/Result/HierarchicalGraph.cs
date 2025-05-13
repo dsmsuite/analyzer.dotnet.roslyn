@@ -130,12 +130,9 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
 
         private string? GetComment(SyntaxNode node)
         {
-            Console.WriteLine($"GetComments ------------------");
             string? comment = null;
 
             var token = node.GetFirstToken();
-
-            Console.WriteLine($"Token: {token.ToFullString()}");
 
             foreach (SyntaxTrivia trivia in token.LeadingTrivia)
             {
@@ -144,7 +141,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                     trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
                 {
                     comment = trivia.ToFullString().Trim();
-                    Console.WriteLine($"Leading comment: {comment}");
                 }
             }
 
@@ -155,7 +151,6 @@ namespace dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration
                     trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
                 {
                     comment = trivia.ToFullString().Trim();
-                    Console.WriteLine($"Trailing comment: {comment}");
                 }
             }
 

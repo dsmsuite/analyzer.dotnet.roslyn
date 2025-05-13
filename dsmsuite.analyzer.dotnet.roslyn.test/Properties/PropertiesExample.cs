@@ -2,12 +2,6 @@
 {
     public struct ProviderStruct
     {
-        public ProviderStruct()
-        {
-            member1 = 0;
-            member2 = "val2";
-        }
-
         public ProviderStruct(int val1, string val2)
         {
             member1 = val1;
@@ -22,31 +16,26 @@
     {
         enum_val1,
         enum_val2,
-        enum_val3
     };
 
     public class ProviderClass
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderClassMethod() { }
     }
 
     public class ProviderListTemplateArgument
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderListTemplateArgumentMethod() { }
     };
 
     public class ProviderTemplateArgument1
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderTemplateArgument1Method() { }
     };
 
     public class ProviderTemplateArgument2
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderTemplateArgument2Method() { }
     };
 
     public class ProviderGenericClass<T, U> where T : new() where U : new()
@@ -85,8 +74,6 @@
                     break;
                 case ProviderEnum.enum_val2:
                     break;
-                case ProviderEnum.enum_val3:
-                    break;
                 default:
                     break;
             }
@@ -99,39 +86,24 @@
 
         public void MethodUsingClassMember()
         {
-            ClassProperty.PublicMethodA();
-            ClassProperty.PublicMethodB();
+            ClassProperty.ProviderClassMethod();
         }
 
         public void MethodUsingStdListMember()
         {
             // Use explicit type
             ProviderListTemplateArgument firstElement = ListClassProperty.First<ProviderListTemplateArgument>();
-            firstElement.PublicMethodA();
-            firstElement.PublicMethodB();
-
-            // Use implicit type
-            //ListClassProperty[0].PublicMethodC();
-            //ListClassProperty[0].PublicMethodD();
+            firstElement.ProviderListTemplateArgumentMethod();
         }
 
         public void MethodUsingGenericClassMember()
         {
             // Use explicit type
             ProviderTemplateArgument1? t = GenericClassProperty.GetFirstTemplateArgument();
-            t?.PublicMethodA();
-            t?.PublicMethodB();
+            t?.ProviderTemplateArgument1Method();
 
             ProviderTemplateArgument2? u = GenericClassProperty.GetSecondTemplateArgument();
-            u?.PublicMethodA();
-            u?.PublicMethodB();
-
-            // Use implicit type
-            //GenericClassProperty.GetFirstTemplateArgument()?.PublicMethodC();
-            //GenericClassProperty.GetFirstTemplateArgument()?.PublicMethodD();
-
-            //GenericClassProperty.GetSecondTemplateArgument()?.PublicMethodC();
-            //GenericClassProperty.GetSecondTemplateArgument()?.PublicMethodD();
+            u?.ProviderTemplateArgument2Method();
         }
 
         private int _intProtertyBackingField;
