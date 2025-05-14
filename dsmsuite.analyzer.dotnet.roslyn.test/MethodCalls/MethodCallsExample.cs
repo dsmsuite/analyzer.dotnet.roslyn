@@ -2,58 +2,44 @@
 {
     public struct ProviderStruct
     {
-        public ProviderStruct()
-        {
-            member1 = 0;
-            member2 = "val2";
-        }
-
         public ProviderStruct(int val1, string val2)
         {
-            member1 = val1;
-            member2 = val2;
+            structMember1 = val1;
+            structMember2 = val2;
         }
 
-        public int member1;
-        public string member2;
+        public int structMember1;
+        public string structMember2;
     };
 
     public enum ProviderEnum
     {
-        enum_val1,
-        enum_val2,
-        enum_val3
+        enumVal1,
+        enumVal2
     };
 
     public class ProviderClass
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderClassMethod() { }
     }
 
     public class ProviderListTemplateArgument
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderListTemplateArgumentMethod() { }
     };
 
     public class ProviderTemplateArgument1
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderTemplateArgument1Method() { }
     };
 
     public class ProviderTemplateArgument2
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderTemplateArgument2Method() { }
     };
 
     public class ProviderGenericClass<T, U> where T : new() where U : new()
     {
-        public ProviderGenericClass() { }
-        ~ProviderGenericClass() { }
-
         public T GetFirstTemplateArgument() { return new T(); }
         public U GetSecondTemplateArgument() { return new U(); }
     };
@@ -67,55 +53,38 @@
 
         public void MethodWithEnumParameter(ProviderEnum enumParameter)
         {
-            enumParameter = ProviderEnum.enum_val1;
+            enumParameter = ProviderEnum.enumVal1;
         }
 
         public void MethodWithStructParameter(ProviderStruct structParameter)
         {
-            structParameter.member1 = 1;
-            structParameter.member2 = "test";
+            structParameter.structMember1 = 1;
+            structParameter.structMember2 = "test";
         }
 
         public void MethodWithClassParameter(ProviderClass classParameter)
         {
-            classParameter.PublicMethodA();
-            classParameter.PublicMethodB();
+            classParameter.ProviderClassMethod();
         }
 
         public void MethodWithNullableClassParameter(ProviderClass? classParameter)
         {
-            classParameter?.PublicMethodA();
-            classParameter?.PublicMethodB();
+            classParameter?.ProviderClassMethod();
         }
 
         public void MethodWithStdListParameter(List<ProviderListTemplateArgument> listParameter)
         {
             ProviderListTemplateArgument firstElement = listParameter.First<ProviderListTemplateArgument>();
-            firstElement.PublicMethodA();
-            firstElement.PublicMethodB();
-
-            // Use implicit type
-            //listParameter[0].PublicMethodC();
-            //listParameter[0].PublicMethodD();
+            firstElement.ProviderListTemplateArgumentMethod();
         }
 
         public void MethodWithGenericClassParameter(ProviderGenericClass<ProviderTemplateArgument1, ProviderTemplateArgument2> genericClassParameter)
         {
-            // Use explicit type
             ProviderTemplateArgument1? t = genericClassParameter.GetFirstTemplateArgument();
-            t?.PublicMethodA();
-            t?.PublicMethodB();
+            t?.ProviderTemplateArgument1Method();
 
             ProviderTemplateArgument2? u = genericClassParameter.GetSecondTemplateArgument();
-            u?.PublicMethodA();
-            u?.PublicMethodB();
-
-            // Use implicit type
-            //genericClassParameter.GetFirstTemplateArgument()?.PublicMethodC();
-            //genericClassParameter.GetFirstTemplateArgument()?.PublicMethodD();
-
-            //genericClassParameter.GetSecondTemplateArgument()?.PublicMethodC();
-            //genericClassParameter.GetSecondTemplateArgument()?.PublicMethodD();
+            u?.ProviderTemplateArgument2Method();
         }
     };
 }

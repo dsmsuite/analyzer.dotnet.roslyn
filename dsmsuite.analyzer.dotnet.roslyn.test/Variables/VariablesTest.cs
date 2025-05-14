@@ -1,4 +1,5 @@
 using dsmsuite.analyzer.dotnet.roslyn.Analysis.Registration;
+using dsmsuite.analyzer.dotnet.roslyn.Graph;
 
 namespace dsmsuite.analyzer.dotnet.roslyn.test.Variables
 {
@@ -20,15 +21,54 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test.Variables
         }
 
         [TestMethod]
-        public void TestMethod1()
+        public void TestNodesExist()
         {
              Analyze("VariablesExample.cs");
+
+            Assert.IsTrue(NodeExists("Variables", NodeType.Namespace));
+            Assert.IsTrue(NodeExists("Variables.ProviderStruct", NodeType.Struct));
+            Assert.IsTrue(NodeExists("Variables.ProviderStruct..ctor", NodeType.Constructor));
+            Assert.IsTrue(NodeExists("Variables.ProviderStruct.structMember1", NodeType.Field));
+            Assert.IsTrue(NodeExists("Variables.ProviderStruct.structMember2", NodeType.Field));
+            Assert.IsTrue(NodeExists("Variables.ProviderEnum", NodeType.Enum));
+            Assert.IsTrue(NodeExists("Variables.ProviderEnum.enumVal1", NodeType.EnumValue));
+            Assert.IsTrue(NodeExists("Variables.ProviderEnum.enumVal2", NodeType.EnumValue));
+            Assert.IsTrue(NodeExists("Variables.ProviderClass", NodeType.Class));
+            Assert.IsTrue(NodeExists("Variables.ProviderClass.ProviderClassMethod", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.ProviderListTemplateArgument", NodeType.Class));
+            Assert.IsTrue(NodeExists("Variables.ProviderListTemplateArgument.ProviderListTemplateArgumentMethod", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.ProviderTemplateArgument1", NodeType.Class));
+            Assert.IsTrue(NodeExists("Variables.ProviderTemplateArgument1.ProviderTemplateArgument1Method", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.ProviderTemplateArgument2", NodeType.Class));
+            Assert.IsTrue(NodeExists("Variables.ProviderTemplateArgument2.ProviderTemplateArgument2Method", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.ProviderGenericClass", NodeType.Class));
+            Assert.IsTrue(NodeExists("Variables.ProviderGenericClass.T", NodeType.TypeParameter));
+            Assert.IsTrue(NodeExists("Variables.ProviderGenericClass.U", NodeType.TypeParameter));
+            Assert.IsTrue(NodeExists("Variables.ProviderGenericClass.GetFirstTemplateArgument", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.ProviderGenericClass.GetSecondTemplateArgument", NodeType.Method));
+
+            Assert.IsTrue(NodeExists("Variables.VariableConsumer", NodeType.Class));
+            Assert.IsTrue(NodeExists("Variables.VariableConsumer.MethodUsingIntVariable", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.VariableConsumer.MethodUsingEnumVariable", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.VariableConsumer.MethodUsingStructVariable", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.VariableConsumer.MethodUsingClassVariable", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.VariableConsumer.MethodUsingStandardGenericContainerListVariable", NodeType.Method));
+            Assert.IsTrue(NodeExists("Variables.VariableConsumer.MethodUsingGenericClassVariable", NodeType.Method));
         }
 
         [TestMethod]
-        public void TestMethod2()
+        public void TestEdgesExist()
         {
              Analyze("VariablesExample.cs");
+
+            Assert.IsTrue(EdgeExists("Variables.ProviderGenericClass.GetFirstTemplateArgument", "Variables.ProviderGenericClass.T", EdgeType.ReturnType));
+            Assert.IsTrue(EdgeExists("Variables.ProviderGenericClass.GetSecondTemplateArgument", "Variables.ProviderGenericClass.U", EdgeType.ReturnType));
+            Assert.IsTrue(EdgeExists("Variables.VariableConsumer.MethodUsingClassVariable", "Variables.ProviderClass.ProviderClassMethod", EdgeType.Call));
+            Assert.IsTrue(EdgeExists("Variables.VariableConsumer.MethodUsingStandardGenericContainerListVariable", "Variables.ProviderListTemplateArgument.ProviderListTemplateArgumentMethod", EdgeType.Call));
+            Assert.IsTrue(EdgeExists("Variables.VariableConsumer.MethodUsingGenericClassVariable", "Variables.ProviderTemplateArgument1.ProviderTemplateArgument1Method", EdgeType.Call));
+            Assert.IsTrue(EdgeExists("Variables.VariableConsumer.MethodUsingGenericClassVariable", "Variables.ProviderTemplateArgument2.ProviderTemplateArgument2Method", EdgeType.Call));
+
+
         }
     }
 }

@@ -2,58 +2,44 @@
 {
     public struct ProviderStruct
     {
-        public ProviderStruct()
-        {
-            member1 = 0;
-            member2 = "val2";
-        }
-
         public ProviderStruct(int val1, string val2)
         {
-            member1 = val1;
-            member2 = val2;
+            structMember1 = val1;
+            structMember2 = val2;
         }
 
-        public int member1;
-        public string member2;
+        public int structMember1;
+        public string structMember2;
     };
 
     public enum ProviderEnum
     {
-        enum_val1,
-        enum_val2,
-        enum_val3
+        enumVal1,
+        enumVal2
     };
 
     public class ProviderClass
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderClassMethod() { }
     }
 
     public class ProviderListTemplateArgument
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderListTemplateArgumentMethod() { }
     };
 
     public class ProviderTemplateArgument1
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderTemplateArgument1Method() { }
     };
 
     public class ProviderTemplateArgument2
     {
-        public void PublicMethodA() { }
-        public void PublicMethodB() { }
+        public void ProviderTemplateArgument2Method() { }
     };
 
     public class ProviderGenericClass<T, U> where T : new() where U : new()
     {
-        public ProviderGenericClass() { }
-        ~ProviderGenericClass() { }
-
         public T GetFirstTemplateArgument() { return new T(); }
         public U GetSecondTemplateArgument() { return new U(); }
     };
@@ -63,7 +49,7 @@
         public FieldConsumer()
         {
             _intMember = 123;
-            _enumMember = ProviderEnum.enum_val1;
+            _enumMember = ProviderEnum.enumVal1;
             _structMember = new ProviderStruct(1, "test");
             _classMember = new ProviderClass();
             _listClassMember = new List<ProviderListTemplateArgument>();
@@ -79,11 +65,9 @@
         {
             switch (_enumMember)
             {
-                case ProviderEnum.enum_val1:
+                case ProviderEnum.enumVal1:
                     break;
-                case ProviderEnum.enum_val2:
-                    break;
-                case ProviderEnum.enum_val3:
+                case ProviderEnum.enumVal2:
                     break;
                 default:
                     break;
@@ -92,45 +76,28 @@
 
         public void MethodUsingStructMember()
         {
-            _structMember.member1 = 1;
-            _structMember.member2 = "test";
+            _structMember.structMember1 = 1;
+            _structMember.structMember2 = "test";
         }
 
         public void MethodUsingClassMember()
         {
-            _classMember.PublicMethodA();
-            _classMember.PublicMethodB();
+            _classMember.ProviderClassMethod();
         }
 
         public void MethodUsingStdListMember()
         {
-            // Use explicit type
             ProviderListTemplateArgument firstElement = _listClassMember.First<ProviderListTemplateArgument>();
-            firstElement.PublicMethodA();
-            firstElement.PublicMethodB();
-
-            // Use implicit type
-            //_listClassMember[0].PublicMethodC();
-            //_listClassMember[0].PublicMethodD();
+            firstElement.ProviderListTemplateArgumentMethod();
         }
 
         public void MethodUsingGenericClassMember()
         {
-            // Use explicit type
             ProviderTemplateArgument1? t = _genericClassMember.GetFirstTemplateArgument();
-            t?.PublicMethodA();
-            t?.PublicMethodB();
+            t?.ProviderTemplateArgument1Method();
 
             ProviderTemplateArgument2? u = _genericClassMember.GetSecondTemplateArgument();
-            u?.PublicMethodA();
-            u?.PublicMethodB();
-
-            // Use implicit type
-            //_genericClassMember.GetFirstTemplateArgument()?.PublicMethodC();
-            //_genericClassMember.GetFirstTemplateArgument()?.PublicMethodD();
-
-            //_genericClassMember.GetSecondTemplateArgument()?.PublicMethodC();
-            //_genericClassMember.GetSecondTemplateArgument()?.PublicMethodD();
+            u?.ProviderTemplateArgument2Method();
         }
 
         private int _intMember;

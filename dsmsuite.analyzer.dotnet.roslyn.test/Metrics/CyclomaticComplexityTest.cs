@@ -1,10 +1,11 @@
-namespace dsmsuite.analyzer.dotnet.roslyn.test;
-
-[TestClass]
-public class CyclomaticComplexityTest
+namespace dsmsuite.analyzer.dotnet.roslyn.test.Metrics
 {
-    [TestMethod]
-    public void TestMethod1()
+    [TestClass]
+    public class CyclomaticComplexityTest : TestFixture
     {
+        [TestMethod]
+        public void TestMethod1()
+        {
+        }
     }
 }

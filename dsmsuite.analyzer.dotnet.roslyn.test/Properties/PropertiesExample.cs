@@ -4,18 +4,18 @@
     {
         public ProviderStruct(int val1, string val2)
         {
-            member1 = val1;
-            member2 = val2;
+            structMember1 = val1;
+            structMember2 = val2;
         }
 
-        public int member1;
-        public string member2;
+        public int structMember1;
+        public string structMember2;
     };
 
     public enum ProviderEnum
     {
-        enum_val1,
-        enum_val2,
+        enumVal1,
+        enumVal2
     };
 
     public class ProviderClass
@@ -40,9 +40,6 @@
 
     public class ProviderGenericClass<T, U> where T : new() where U : new()
     {
-        public ProviderGenericClass() { }
-        ~ProviderGenericClass() { }
-
         public T GetFirstTemplateArgument() { return new T(); }
         public U GetSecondTemplateArgument() { return new U(); }
     };
@@ -53,7 +50,7 @@
         {
             IntPropertyWithBackingField = 456;
             IntProperty = 123;
-            EnumProperty = ProviderEnum.enum_val1;
+            EnumProperty = ProviderEnum.enumVal1;
             StructProperty = new ProviderStruct(1, "test");
             ClassProperty = new ProviderClass();
             ListClassProperty = new List<ProviderListTemplateArgument>();
@@ -70,9 +67,9 @@
         {
             switch (EnumProperty)
             {
-                case ProviderEnum.enum_val1:
+                case ProviderEnum.enumVal1:
                     break;
-                case ProviderEnum.enum_val2:
+                case ProviderEnum.enumVal2:
                     break;
                 default:
                     break;
@@ -81,7 +78,7 @@
 
         public void MethodUsingStructMember()
         {
-            if (StructProperty.member1 == 1 && StructProperty.member2 == "test") { }
+            if (StructProperty.structMember1 == 1 && StructProperty.structMember2 == "test") { }
         }
 
         public void MethodUsingClassMember()
