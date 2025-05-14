@@ -34,15 +34,25 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             Console.WriteLine("Actual nodes:");
             foreach (INode node in _hierarchicalGraph.Nodes)
             {
-                Console.WriteLine($"  name={node.Fullname} type={node.NodeType} file={node.Filename} lines={node.Startline}-{node.Endline}");
+                if (IncludeNode(node))
+                {
+                    Console.WriteLine($"Assert.IsTrue(NodeExists(\"{GetRelativeNodeName(node.Fullname)}\", NodeType.{node.NodeType}));");
+                }
+                //Console.WriteLine($"  name={node.Fullname} type={node.NodeType} file={node.Filename} lines={node.Startline}-{node.Endline}");
             }
 
             Console.WriteLine("Actual edges:");
             foreach (IEdge edge in _hierarchicalGraph.Edges)
             {
-                Console.WriteLine($"  Edge: source={edge.Source.Fullname} target={edge.Target.Fullname} type={edge.EdgeType} file={edge.Filename} line={edge.Line}");
+                if (IncludeNode(edge.Source) && IncludeNode(edge.Target))
+                {
+                    Console.WriteLine($"Assert.IsTrue(EdgeExists(\"{GetRelativeNodeName(edge.Source.Fullname)}\",\"{GetRelativeNodeName(edge.Target.Fullname)}\",EdgeType.{edge.EdgeType}));");
+                    //Console.WriteLine($"  Edge: source={edge.Source.Fullname} target={edge.Target.Fullname} type={edge.EdgeType} file={edge.Filename} line={edge.Line}");
+                }
             }
         }
+
+
 
         public string Namespace => _namespace;
         public int FailedCount => _failedCount;
@@ -136,14 +146,31 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             return foundEdge;
         }
 
-        private bool NodeNameMatches(INode node, string actual)
+        private bool IncludeNode(INode node)
         {
-            return node.Fullname == GetExpectedNodeName(actual);
+            return node.Fullname.StartsWith($"{_namespace}.");
         }
 
-        private string GetExpectedNodeName(string actual)
+        private bool NodeNameMatches(INode node, string actual)
         {
-            return $"{_namespace}.{actual}";
+            return node.Fullname == GetFullNodeName(actual);
+        }
+
+        private string GetFullNodeName(string relativeNodeName)
+        {
+            return $"{_namespace}.{relativeNodeName}";
+        }
+
+        private string GetRelativeNodeName(string fullNodeName)
+        {
+            if (fullNodeName.StartsWith($"{_namespace}."))
+            {
+                return fullNodeName.Substring(_namespace.Length + 1);
+            }
+            else
+            {
+                return fullNodeName;
+            }
         }
 
         private bool NodeTypeMatches(INode node, NodeType nodeType)

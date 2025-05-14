@@ -73,13 +73,17 @@ namespace Events
             Assert.IsTrue(EdgeExists("Events.EventConsumer.ProviderChangedEventHandler", "Events.ProviderClass.ProviderChanged", EdgeType.HandlEvent));
             Assert.IsTrue(EdgeCountIs(4, EdgeType.HandlEvent));
 
-            Assert.IsTrue(EdgeExists("Events.IProviderInterface", "Events.IProviderInterface.ProviderChanged", EdgeType.SubscribeEvent));
-            Assert.IsTrue(EdgeExists("Events.IProviderInterface", "Events.ProviderClass.ProviderChanged", EdgeType.SubscribeEvent));
-            Assert.IsTrue(EdgeCountIs(1, EdgeType.SubscribeEvent));
+            Assert.IsTrue(EdgeExists("Events.EventConsumer.MethodSubscribeInterfaceEvent", "Events.IProviderInterface.ProviderChanged", EdgeType.SubscribeEvent));
+            Assert.IsTrue(EdgeExists("Events.EventConsumer.MethodSubscribeClassEvent", "Events.ProviderClass.ProviderChanged", EdgeType.SubscribeEvent));
+            Assert.IsTrue(EdgeCountIs(2, EdgeType.SubscribeEvent));
 
-            Assert.IsTrue(EdgeExists("Events.ProviderClass", "Events.IProviderInterface.ProviderChanged", EdgeType.UnsubscribeEvent));
-            Assert.IsTrue(EdgeExists("Events.ProviderClass", "Events.ProviderClass.ProviderChanged", EdgeType.UnsubscribeEvent));
-            Assert.IsTrue(EdgeCountIs(1, EdgeType.UnsubscribeEvent));
+            Assert.IsTrue(EdgeExists("Events.EventConsumer.MethodUnsubscribeInterfaceEvent", "Events.IProviderInterface.ProviderChanged", EdgeType.UnsubscribeEvent));
+            Assert.IsTrue(EdgeExists("Events.EventConsumer.MethodUnsubscribeClassEvent", "Events.ProviderClass.ProviderChanged", EdgeType.UnsubscribeEvent));
+            Assert.IsTrue(EdgeCountIs(2, EdgeType.UnsubscribeEvent));
+
+            Assert.IsTrue(EdgeExists("Events.ProviderClass.TriggerEvent", "Events.ProviderClass.ProviderChanged", EdgeType.TriggerEvent));
+            Assert.IsTrue(EdgeCountIs(1, EdgeType.TriggerEvent));
+
         }
     }
 }
