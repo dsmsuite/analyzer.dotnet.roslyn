@@ -307,16 +307,24 @@ public class SyntaxNodeVisitor : CSharpSyntaxWalker
     public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
     {
         IEventSymbol? eventSymbol = _semanticModel.GetSymbolInfo(node.Left).Symbol as IEventSymbol;
-        ISymbol? eventHandlerSymbol = _semanticModel.GetSymbolInfo(node.Right).Symbol;
+        IEnumerable<ISymbol> eventHandlerSymbols = _semanticModel.GetSymbolInfo(node.Right).CandidateSymbols;
         ISymbol? parentSymbol = eventSymbol?.ContainingSymbol;
+
         if (node.IsKind(SyntaxKind.AddAssignmentExpression))
         {
-            _hierarchicalGraphBuilder.AddEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.SubscribeEvent);
-            _hierarchicalGraphBuilder.AddEdge(node, parentSymbol, eventSymbol, EdgeType.HandlEvent);
+            foreach(ISymbol eventHandlerSymbol in eventHandlerSymbols)
+            {
+                _hierarchicalGraphBuilder.AddEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.HandlEvent);
+            }
+            _hierarchicalGraphBuilder.AddEdge(node, parentSymbol, eventSymbol, EdgeType.SubscribeEvent);
         }
         else if (node.IsKind(SyntaxKind.SubtractAssignmentExpression))
         {
-            _hierarchicalGraphBuilder.AddEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.UnsubscribeEvent);
+            foreach (ISymbol eventHandlerSymbol in eventHandlerSymbols)
+            {
+                _hierarchicalGraphBuilder.AddEdge(node, eventHandlerSymbol, eventSymbol, EdgeType.HandlEvent);
+            }
+            _hierarchicalGraphBuilder.AddEdge(node, parentSymbol, eventSymbol, EdgeType.UnsubscribeEvent);
         }
 
         base.VisitAssignmentExpression(node);

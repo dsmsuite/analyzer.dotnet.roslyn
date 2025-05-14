@@ -30,6 +30,18 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
             SyntaxNodeVisitor walker = new SyntaxNodeVisitor(semanticModel, _hierarchicalGraph);
             walker.Visit(tree.GetRoot());
             _hierarchicalGraph.Build();
+
+            Console.WriteLine("Actual nodes:");
+            foreach (INode node in _hierarchicalGraph.Nodes)
+            {
+                Console.WriteLine($"  name={node.Fullname} type={node.NodeType} file={node.Filename} lines={node.Startline}-{node.Endline}");
+            }
+
+            Console.WriteLine("Actual edges:");
+            foreach (IEdge edge in _hierarchicalGraph.Edges)
+            {
+                Console.WriteLine($"  Edge: source={edge.Source.Fullname} target={edge.Target.Fullname} type={edge.EdgeType} file={edge.Filename} line={edge.Line}");
+            }
         }
 
         public string Namespace => _namespace;
@@ -47,15 +59,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
                 }
             }
 
-            bool actualNodeCountOk = actualNodeCount == expectedNodeCount;
-
-            if (!actualNodeCountOk)
-            {
-                Console.WriteLine($"Expected node count: {expectedNodeCount}");
-                Console.WriteLine($"Actual node count: {actualNodeCount}");
-            }
-
-            return actualNodeCountOk;
+            return actualNodeCount == expectedNodeCount;
         }
 
         public bool NodeExists(string name, NodeType nodeType)
@@ -70,24 +74,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
                 }
             }
 
-            if (count != 1)
-            {
-                Console.WriteLine($"Expected node:");
-                Console.WriteLine($"  name={GetExpectedNodeName(name)} type={nodeType}");
-
-                Console.WriteLine("Actual nodes:");
-                foreach (INode node in _hierarchicalGraph.Nodes)
-                {
-                    Console.WriteLine($"  name={node.Fullname} type={node.NodeType} file={node.Filename} lines={node.Startline}-{node.Endline}");
-                }
-            }
-
             return count == 1;
         }
 
         public INode? FindNode(string name, NodeType nodeType)
         {
-            INode foundNode = null;
+            INode? foundNode = null;
             foreach (INode node in _hierarchicalGraph.Nodes)
             {
                 if (NodeNameMatches(node, name) &&
@@ -110,15 +102,7 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
                 }
             }
 
-            bool actualEdgeCountOk = actualEdgeCount == expectedEdgeCount;
-
-            if (!actualEdgeCountOk)
-            {
-                Console.WriteLine($"Expected edge count: {expectedEdgeCount}");
-                Console.WriteLine($"Actual edge count: {_hierarchicalGraph.Edges.Count()}");
-            }
-
-            return actualEdgeCountOk;
+            return actualEdgeCount == expectedEdgeCount;
         }
 
         public bool EdgeExists(string source, string target, EdgeType edgeType)
@@ -134,23 +118,12 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
                 }
             }
 
-            if (count != 1)
-            {
-                Console.WriteLine($"Expected edge:");
-                Console.WriteLine($"  source={GetExpectedNodeName(source)} target={GetExpectedNodeName(target)} type={edgeType}");
-
-                Console.WriteLine("Actual edges:");
-                foreach (IEdge edge in _hierarchicalGraph.Edges)
-                {
-                    Console.WriteLine($"  Edge: source={edge.Source.Fullname} target={edge.Target.Fullname} type={edge.EdgeType} file={edge.Filename} line={edge.Line}");
-                }
-            }
             return count == 1;
         }
 
         public IEdge? FindEdge(string source, string target, EdgeType edgeType)
         {
-            IEdge foundEdge = null;
+            IEdge? foundEdge = null;
             foreach (IEdge edge in _hierarchicalGraph.Edges)
             {
                 if (NodeNameMatches(edge.Source, source) &&
@@ -190,11 +163,11 @@ namespace dsmsuite.analyzer.dotnet.roslyn.test
                 case Result.Success:
                     break;
                 case Result.Failed:
-                    Console.WriteLine($"Failed: action={actionDescription} file={syntaxNodeFilename} line={syntaxNodeline} from method={method}");
+                    Console.WriteLine($"Failed: action={actionDescription} line={syntaxNodeline} from method={method} line={lineNumber}");
                     _failedCount++;
                     break;
                 case Result.Ignored:
-                    Console.WriteLine($"Ignored: action={actionDescription} file={syntaxNodeFilename} line={syntaxNodeline} from method={method}");
+                    Console.WriteLine($"Ignored: action={actionDescription} line={syntaxNodeline} from method={method} line={lineNumber}");
                     _ignoredCount++;
                     break;
                 default:
